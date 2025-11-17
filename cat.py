@@ -25,7 +25,8 @@ class Cat(pg.sprite.Sprite):
         # 预先加载站立姿势，供开始界面使用
         cat_image = pg.image.load(CAT_STAND).convert_alpha()
         self.cat_stand = pg.transform.scale(cat_image, (CAT_WIDTH * 2, CAT_HEIGHT * 2))
-        self.cat_stand_rect = self.cat_stand.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+        # 使用可配置的起始 X（默认向左偏移），以便在屏幕偏左区域展示角色
+        self.cat_stand_rect = self.cat_stand.get_rect(center=(CAT_START_X, HEIGHT // 2))
 
         # 行走动画
         self.cat_walk = []
@@ -34,7 +35,8 @@ class Cat(pg.sprite.Sprite):
             walk_image = pg.transform.scale(walk_image, (CAT_WIDTH, CAT_HEIGHT))
             self.cat_walk.append(walk_image)
         self.image = self.cat_walk[self.cat_index]
-        self.rect = self.image.get_rect(midbottom=(WIDTH // 2, GROUND_HEIGHT))
+        # 初始位置使用 CAT_START_X（便于调整并保持在地面）
+        self.rect = self.image.get_rect(midbottom=(CAT_START_X, GROUND_HEIGHT))
 
         # 跳跃动画
         self.cat_jump = []

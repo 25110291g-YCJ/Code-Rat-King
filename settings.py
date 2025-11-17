@@ -1,15 +1,14 @@
 import pygame as pg
 pg.init()
 
-"""
-"A Trip Home" 游戏的设置模块。此模块包含游戏玩法的所有默认设置。
-通过在主游戏文件中导入此模块，可以方便地访问并使用这些设置。
-"""
-
 # 游戏尺寸
 WIDTH, HEIGHT = 1600, 900  # 游戏窗口显示尺寸
 GROUND_DEPTH = 200  # 地面深度
 GROUND_HEIGHT = HEIGHT - GROUND_DEPTH  # 地面高度
+
+# 可配置的猫起始 X 坐标（方便把猫放到屏幕偏左的位置）
+# 默认在屏幕中间左移 120 像素
+CAT_START_X = WIDTH // 2 - 120
 GAMENAME_HEIGHT = HEIGHT // 5  # 游戏名称显示高度
 GAMEMESSAGE_HEIGHT = HEIGHT // 1.25  # 游戏提示信息显示高度
 TEXTTARGET_HEIGHT = GROUND_HEIGHT // 3  # 文本目标显示高度
@@ -42,9 +41,14 @@ SUPER_JUMP_TEXT_COLOR = 'gold'
 TREE_SPAWN_FREQ = 3000
 TREE_SPAWN_MIN = 1500
 TREE_SPAWN_STEP = 150
-HOUSE_SPAWN_FREQ = 300000
-HOUSE_SPAWN_MIN = 120000
-HOUSE_SPAWN_STEP = 10000
+# 房屋默认在约 1 分钟出现（加上 ~4 秒移动距离）
+HOUSE_SPAWN_FREQ = 56000
+HOUSE_SPAWN_MIN = 35000
+HOUSE_SPAWN_STEP = 5000
+# 固定一次性房屋生成（毫秒）：用于只在开局后固定时刻生成房屋的模式
+HOUSE_FIXED_SPAWN_MS = 60000
+# 关卡过渡提示持续时长（毫秒）
+LEVEL_TRANSITION_MS = 2000
 DOG_SPAWN_FREQ = 30000
 DOG_SPAWN_MIN = 12000
 DOG_SPAWN_STEP = 1000
@@ -61,13 +65,20 @@ WRONG_TYPING = pg.USEREVENT + 6
 SUPER_JUMP_READY = pg.USEREVENT + 7
 LAND_EVENT = pg.USEREVENT + 8
 ITEM_SPAWN = pg.USEREVENT + 9
+
 # 惩罚与奖励设置
 MISS_FEEDBACK_FRAMES = FPS // 4
 PENALTY_LOCK_FRAMES = FPS // 2
 PENALTY_FLASH_FRAMES = FPS // 6
 COMBO_THRESHOLD = 20
+
+# 连击评分设定：每 COMBO_STEP 个连续命中增加 COMBO_BONUS 的倍率，上限为 COMBO_MAX_MULTIPLIER
+COMBO_STEP = 5
+COMBO_BONUS = 0.1
+COMBO_MAX_MULTIPLIER = 2.0
+
 # 超级跳跃力：比普通跳更强
-# 目标：让超级跳跃高度略高于普通跳跃（使用 1.2 倍的初速度），并随 GRAVITY 调整。
+# 让超级跳跃高度略高于普通跳跃（使用 1.2 倍的初速度），并随 GRAVITY 调整。
 SUPER_JUMP_FORCE = int(GRAVITY * 1.2)  # 使用 1.2 倍（例如 GRAVITY=-30 时约为 -36）
 SUPER_JUMP_BONUS = 5
 SUPER_JUMP_NOTICE_FRAMES = FPS
@@ -79,7 +90,7 @@ WORD_BASE_MAX_LENGTH = 7
 WORD_LENGTH_CAP = 12
 
 # 血量设置
-MAX_HEALTH = 10  # 玩家最多能承受多少次错误（默认为10次）
+MAX_HEALTH = 20  # 玩家最多能承受多少次错误（已调整为20次）
 HEALTH_BAR_WIDTH = 300
 HEALTH_BAR_HEIGHT = 28
 HEALTH_BAR_POS = (40, 40)
@@ -117,6 +128,7 @@ BARK_SOUND = 'assets/sound effect/dog_barking.wav'
 # 失败（Game Over）配置
 GAME_OVER_DURATION = 2000  # 毫秒，Game Over 屏保持时长
 LOSE_SOUND = 'assets/sound effect/hit.wav'  # 可替换为更合适的失败音效
+
 # 碰撞伤害相关：命中后短时间无敌，防止多帧连续受伤（以帧为单位）
 # 推荐值为 FPS（1 秒无敌），可按需缩短
 DAMAGE_INVULN_FRAMES = FPS
@@ -143,7 +155,6 @@ PARALLAX_GROUND_ALPHAS = [255, 200]
 # 已根据请求再次加快一些（由 1.25 -> 1.6）
 OBSTACLE_SPEED_MULTIPLIER = 1.6
 
-
 # 着陆/地面粒子（跳跃落地尘土）配置
 DUST_PARTICLE_COUNT = 12
 DUST_PARTICLE_LIFETIME = FPS // 6  # 较短寿命
@@ -152,12 +163,20 @@ DUST_PARTICLE_SIZE_MIN = 4
 DUST_PARTICLE_SIZE_MAX = 10
 
 # 地面道具（Items）配置：生命包与护盾
-ITEM_SPAWN_FREQ = 10000  # 毫秒，默认每 10 秒尝试生成一次道具
+ITEM_SPAWN_FREQ = 5000  # 毫秒，默认每 5 秒尝试生成一次道具
 ITEM_MAX_ACTIVE = 2      # 场上同时存在的道具数量上限
 ITEM_LIFETIME = 8 * FPS  # 帧数计数的生存时间
 ITEM_TYPES = ['health', 'shield']
+
 # 简单权重（频率），值越大越常见
-ITEM_RARITY = {'health': 0.6, 'shield': 0.4}
+ITEM_TYPES = ['health', 'shield', 'superjump']
+# 超级跳道具贴图
+SUPERJUMP_ITEM = 'assets/items/zap.png'
+# 血包道具贴图
+HEALTH_ITEM = 'assets/items/heart.png'
+# 简单权重（频率），值越大越常见。
+# 调整为：health 0.50, shield 0.30, superjump 0.20（总计 1.0，便于理解与调试）
+ITEM_RARITY = {'health': 0.50, 'shield': 0.30, 'superjump': 0.20}
 
 # 护盾时长（秒）
 SHIELD_DURATION = 3

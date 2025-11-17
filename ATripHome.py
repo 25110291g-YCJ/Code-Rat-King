@@ -11,152 +11,9 @@ from trees import Trees
 from particles import Particle, DustParticle
 from items import GroundItem
 from background import Background
-
-
-
-
-
-class Dog(pg.sprite.Sprite):
-    """彩蛋狗狗精灵，偶尔乱入并随着玩家得分而提速。"""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.dog_index = 0
-        self.dog_run = []
-        for frame in DOG_RUN:
-            dog_image = pg.image.load(frame).convert_alpha()
-            dog_image = pg.transform.scale(dog_image, (DOG_WIDTH, DOG_HEIGHT))
-            self.dog_run.append(dog_image)
-        self.image = self.dog_run[self.dog_index]
-        self.rect = self.image.get_rect(midbottom=(WIDTH + DOG_WIDTH, GROUND_HEIGHT))
-
-    def run(self) -> None:
-        # 狗狗速度应与障碍物速度基于同一倍率放大
-        speed = settings.CURRENT_MOVING_SPEED * getattr(settings, 'OBSTACLE_SPEED_MULTIPLIER', 1.0) * 2
-        self.rect.x -= speed
-        if self.rect.right < 0:
-            self.kill()
-
-    def animation(self) -> None:
-        self.dog_index += 0.2
-        if self.dog_index >= len(self.dog_run):
-            self.dog_index = 0
-        self.image = self.dog_run[int(self.dog_index)]
-
-    def update(self) -> None:
-        self.run()
-        self.animation()
-
-
-class TextTarget(pg.sprite.Sprite):
-    """打字目标精灵，负责显示单词、计算得分与连击奖励。"""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.letter_count = 0
-        self.score = 0
-        self.word_length_range = (WORD_BASE_MIN_LENGTH, WORD_BASE_MAX_LENGTH)
-        self.feedback_color = TARGET_TEXT_COLOR
-        self.feedback_timer = 0
-        self.combo_count = 0
-        self.candidate = ''
-        self.hit_sound = pg.mixer.Sound(HIT_SOUND)
-        self.pick_new_word()
-
-    def update_text(self) -> None:
-        self.image = TARGET_FONT.render(self.candidate, False, self.feedback_color)
-        self.rect = self.image.get_rect(center=(WIDTH // 2, TEXTTARGET_HEIGHT))
-
-    def pick_new_word(self) -> None:
-        min_len, max_len = self.word_length_range
-        candidates = [word for word in WORDBANK if min_len <= len(word) <= max_len]
-        if not candidates:
-            candidates = WORDBANK
-        self.candidate = choice(candidates)
-        self.update_text()
-
-    def set_word_length_range(self, min_len: int, max_len: int) -> None:
-        min_len = max(1, min_len)
-        max_len = max(min_len, max_len)
-        self.word_length_range = (
-            min(min_len, WORD_LENGTH_CAP), min(max_len, WORD_LENGTH_CAP)
-        )
-
-    def process_key(self, key: int) -> None:
-        if not self.candidate:
-            return
-        key_name = pg.key.name(key)
-        if len(key_name) != 1 or not key_name.isalpha():
-            return
-        pressed = key_name.lower()
-        target = self.candidate[0]
-        if pressed == target:
-            self._handle_correct_letter()
-        else:
-            self._handle_miss()
-
-    def _handle_correct_letter(self) -> None:
-        self.candidate = self.candidate[1:]
-        self.letter_count += 1
-        self.score = self.letter_count
-        self.combo_count += 1
-        self.feedback_color = TARGET_TEXT_COLOR
-        self.feedback_timer = 0
-        self.hit_sound.play()
-        self.update_text()
-        if not self.candidate:
-            pg.event.post(pg.event.Event(CORRECT_TYPING))
-            self.pick_new_word()
-        self._check_combo_reward()
-
-    def _handle_miss(self) -> None:
-        self.combo_count = 0
-        self.feedback_color = TARGET_ALERT_COLOR
-        self.feedback_timer = MISS_FEEDBACK_FRAMES
-        self.update_text()
-        pg.event.post(pg.event.Event(WRONG_TYPING))
-
-    def _check_combo_reward(self) -> None:
-        if self.combo_count >= COMBO_THRESHOLD:
-            self.combo_count = 0
-            self.letter_count += SUPER_JUMP_BONUS
-            self.score = self.letter_count
-            pg.event.post(pg.event.Event(SUPER_JUMP_READY))
-
-    def update(self) -> None:
-        if self.feedback_timer > 0:
-            self.feedback_timer -= 1
-            if self.feedback_timer == 0:
-                self.feedback_color = TARGET_TEXT_COLOR
-                self.update_text()
-
-
-
-
-
-
-
-
-class House(pg.sprite.Sprite):
-    """终点房屋，猫碰到后视为通关。"""
-
-    def __init__(self) -> None:
-        super().__init__()
-        house_image = pg.image.load(HOUSE).convert_alpha()
-        self.image = pg.transform.scale(house_image, (HOUSE_WIDTH, HOUSE_HEIGHT))
-        self.rect = self.image.get_rect(
-            midbottom=(WIDTH + HOUSE_WIDTH, GROUND_HEIGHT + HOUSE_GROUND_OFFSET)
-        )
-
-    def animation(self) -> None:
-        # 房屋作为终点也随障碍物速度加速
-        speed = settings.CURRENT_MOVING_SPEED * getattr(settings, 'OBSTACLE_SPEED_MULTIPLIER', 1.0)
-        self.rect.x -= speed
-
-    def update(self) -> None:
-        self.animation()
-        if self.rect.right < 0:
-            self.kill()
+from dog import Dog
+from house import House
+from text_target import TextTarget
 
 
 class Game:
@@ -176,7 +33,6 @@ class Game:
         self.super_jump_notice_timer = 0
         self.difficulty_stage = -1
         self.tree_spawn_interval = TREE_SPAWN_FREQ
-        self.house_spawn_interval = HOUSE_SPAWN_FREQ
         self.dog_spawn_interval = DOG_SPAWN_FREQ
         settings.CURRENT_MOVING_SPEED = MOVING_SPEED
 
@@ -193,6 +49,19 @@ class Game:
         except Exception:
             # 若背景模块或资源加载失败，保留兼容的占位字段
             self.background = None
+
+        # 关卡列表：按顺序推进。每一项为 (level_key, folder_name)
+        # level_key: 用于内部标识（'sky','mine','voclano'），folder_name: assets 子目录（None 使用默认 sky+ground）
+        self.levels = [
+            {'key': 'sky', 'folder': None},
+            {'key': 'mine', 'folder': 'Mine'},
+            {'key': 'voclano', 'folder': 'Volcano'},
+        ]
+        self.current_level_index = 0
+        # 关卡过渡提示状态
+        self.show_level_transition = False
+        self.level_transition_timer = 0
+        self.level_transition_text = ''
 
         pg.mixer.music.set_volume(0.5)
         self.play_pregame_music()
@@ -211,6 +80,9 @@ class Game:
         # Game Over 状态与音效
         self.lose_sound = pg.mixer.Sound(LOSE_SOUND)
         self.show_game_over = False
+        self.show_victory = False
+        self.victory_timer = 0
+        self.victory_score = 0
         self.game_over_timer = 0
         self.game_over_score = 0
         # 受伤浮动文字列表，元素为 dict {'x','y','timer','text'}
@@ -230,17 +102,20 @@ class Game:
             self.item_timer = None
 
         self.tree_timer = TREE_SPAWN
-        self.house_timer = HOUSE_SPAWN
         self.dog_timer = DOG_SPAWN
+        # 单次房屋生成：记录时间戳与已生成标志
+        self.house_spawn_time_ms = None
+        self.house_spawned = False
         # 护盾状态
         self.shield_active = False
         self.shield_timer = 0
 
         pg.time.set_timer(self.tree_timer, TREE_SPAWN_FREQ)
-        pg.time.set_timer(self.house_timer, HOUSE_SPAWN_FREQ)
         pg.time.set_timer(self.dog_timer, DOG_SPAWN_FREQ)
         self._init_groups()
         # 将全局组引用回写到实例，便于 HUD/其他模块访问（避免循环导入）
+        # 暴露 text_target 以便 HUD 或其他系统读取当前分数/连击信息
+        self.text_target = text_target
         self.cat_group = cat
         self.trees_group = trees
         self.house_group = house
@@ -256,6 +131,7 @@ class Game:
         self.screen_shake_timer = 0
         self.screen_shake_duration = 0
         self.screen_shake_magnitude = 0
+        
 
     def draw_active_effects(self) -> None:
         """绘制当前激活的持续性效果（如护盾）的 HUD 徽章与计时条。"""
@@ -451,8 +327,13 @@ class Game:
         collided_houses = pg.sprite.spritecollide(cat.sprite, house, False)
         for collided_house in collided_houses:
             if collided_house.rect.centerx <= cat.sprite.rect.centerx:
-                self.win_sound.play()
+                # 播放到达房屋音效并短暂停顿
+                try:
+                    self.win_sound.play()
+                except Exception:
+                    pass
                 pg.time.delay(DELAY_TIME)
+                # 清理当前场景的实体
                 trees.empty()
                 house.empty()
                 dog.empty()
@@ -460,7 +341,53 @@ class Game:
                     self.items.empty()
                 except Exception:
                     pass
-                return False
+
+                # 若存在下一关，则进入下一关并继续游戏；否则视为最终通关
+                try:
+                    if self.current_level_index < len(self.levels) - 1:
+                        self.current_level_index += 1
+                        next_level = self.levels[self.current_level_index]
+                        # 切换背景（如果 background 可用）
+                        try:
+                            if getattr(self, 'background', None):
+                                # 使用 Background 提供的 set_level（接受关卡 key）
+                                self.background.set_level(next_level['key'])
+                        except Exception:
+                            pass
+                        # 触发关卡过渡提示：暂停游戏并展示文字
+                        try:
+                            trans_ms = int(getattr(settings, 'LEVEL_TRANSITION_MS', 2000))
+                        except Exception:
+                            trans_ms = 2000
+                        # 设置显示文本（只显示关卡编号，如 "LEVEL 2"）
+                        self.level_transition_text = f'LEVEL {self.current_level_index + 1}'
+                        self.level_transition_timer = trans_ms
+                        self.show_level_transition = True
+                        # 暂停游戏循环的更新（以便展示过渡界面）
+                        self.game_active = False
+                        # 在过渡期间把下一关的房屋生成时间向后偏移，确保是在过渡后再开始计时
+                        try:
+                            delay_ms = int(getattr(settings, 'HOUSE_FIXED_SPAWN_MS', 60000))
+                        except Exception:
+                            delay_ms = 60000
+                        self.house_spawn_time_ms = pg.time.get_ticks() + delay_ms + trans_ms
+                        self.house_spawned = False
+                        return False
+                    else:
+                        final_score = text_target.sprite.score if text_target.sprite else 0
+                        self.show_victory = True
+                        self.victory_timer = GAME_OVER_DURATION
+                        self.victory_score = final_score
+                        pg.mixer.music.stop()
+                        return False
+                except Exception:
+                    # 出现异常时回退为原有胜利逻辑
+                    final_score = text_target.sprite.score if text_target.sprite else 0
+                    self.show_victory = True
+                    self.victory_timer = GAME_OVER_DURATION
+                    self.victory_score = final_score
+                    pg.mixer.music.stop()
+                    return False
 
         # 检测与道具的碰撞（拾取）
         try:
@@ -506,6 +433,23 @@ class Game:
                     pg.mixer.Sound(getattr(settings, 'SHIELD_SOUND', '')).play()
                 except Exception:
                     pass
+            elif t == 'superjump':
+                # 立即授予一次超级跳（可被下一次起跳消耗）
+                try:
+                    if cat.sprite:
+                        cat.sprite.enable_super_jump()
+                        # 同步 HUD 提示计时器
+                        try:
+                            self.super_jump_notice_timer = SUPER_JUMP_NOTICE_FRAMES
+                        except Exception:
+                            pass
+                        # 可选播放音效（若配置了 SUPERJUMP_SOUND）
+                        try:
+                            pg.mixer.Sound(getattr(settings, 'SUPERJUMP_SOUND', '')).play()
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
         except Exception:
             pass
 
@@ -532,7 +476,17 @@ class Game:
             cat.sprite.super_jump_ready = False
             cat.sprite.penalty_timer = 0
             cat.sprite.gravity = 0
-            cat.sprite.rect.bottom = GROUND_HEIGHT
+            # 复位猫的位置到可配置的起始 X，并置于地面
+            try:
+                cat.sprite.rect = cat.sprite.image.get_rect(midbottom=(CAT_START_X, GROUND_HEIGHT))
+                # 同步站立姿势的 rect（开始界面使用）
+                try:
+                    cat.sprite.cat_stand_rect = cat.sprite.cat_stand.get_rect(center=(CAT_START_X, HEIGHT // 2))
+                except Exception:
+                    pass
+            except Exception:
+                # 回退：仅重置底部坐标
+                cat.sprite.rect.bottom = GROUND_HEIGHT
 
         if text_target.sprite:
             text_target.sprite.score = 0
@@ -574,9 +528,27 @@ class Game:
             except Exception:
                 pass
 
+        # 重置关卡到第一关（新的运行从 sky 开始）
+        try:
+            self.current_level_index = 0
+            if getattr(self, 'background', None):
+                lvl = self.levels[self.current_level_index]
+                try:
+                    self.background.set_level(lvl['key'])
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
         pg.time.set_timer(self.tree_timer, TREE_SPAWN_FREQ)
-        pg.time.set_timer(self.house_timer, HOUSE_SPAWN_FREQ)
         pg.time.set_timer(self.dog_timer, DOG_SPAWN_FREQ)
+        # 记录一次性房屋生成时间（相对于当前 ticks）
+        try:
+            delay_ms = int(getattr(settings, 'HOUSE_FIXED_SPAWN_MS', 60000))
+        except Exception:
+            delay_ms = 60000
+        self.house_spawn_time_ms = pg.time.get_ticks() + max(0, delay_ms)
+        self.house_spawned = False
 
         self.play_next_music()
         self.adjust_difficulty(0)
@@ -619,12 +591,13 @@ class Game:
                 pg.time.set_timer(timer_id, int(target_interval))
 
         _update_timer('tree_spawn_interval', self.tree_timer, TREE_SPAWN_FREQ, TREE_SPAWN_MIN, TREE_SPAWN_STEP)
-        _update_timer('house_spawn_interval', self.house_timer, HOUSE_SPAWN_FREQ, HOUSE_SPAWN_MIN, HOUSE_SPAWN_STEP)
+    # house spawn is managed as a one-time event (HOUSE_FIXED_SPAWN_MS); skip timer updates here
         _update_timer('dog_spawn_interval', self.dog_timer, DOG_SPAWN_FREQ, DOG_SPAWN_MIN, DOG_SPAWN_STEP)
 
         min_len = min(WORD_LENGTH_CAP, WORD_BASE_MIN_LENGTH + stage)
         max_len = min(WORD_LENGTH_CAP, WORD_BASE_MAX_LENGTH + stage * 2)
         text_target.sprite.set_word_length_range(min_len, max_len)
+        
 
     def draw_penalty_overlay(self) -> None:
         if self.penalty_flash_timer <= 0:
@@ -671,6 +644,37 @@ class Game:
         score_text = SCORE_FONT.render(f'Final Score: {self.game_over_score}', False, 'white')
         score_rect = score_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 60))
         self.screen.blit(score_text, score_rect)
+
+    def draw_victory(self) -> None:
+        """展示胜利覆盖层（英文）——与 Game Over 类似的样式。"""
+        overlay = pg.Surface((WIDTH, HEIGHT), pg.SRCALPHA)
+        overlay.fill((0, 0, 0, 160))
+        self.screen.blit(overlay, (0, 0))
+
+        title = TITLE_FONT.render('YOU MADE IT!', False, 'gold')
+        title_rect = title.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 40))
+        self.screen.blit(title, title_rect)
+
+        score_text = SCORE_FONT.render(f'Final Score: {self.victory_score}', False, 'white')
+        score_rect = score_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 60))
+        self.screen.blit(score_text, score_rect)
+
+    def draw_level_transition(self) -> None:
+        """在两关之间显示过渡提示（如 "LEVEL 2: MINE"）。"""
+        overlay = pg.Surface((WIDTH, HEIGHT), pg.SRCALPHA)
+        overlay.fill((0, 0, 0, 200))
+        self.screen.blit(overlay, (0, 0))
+
+        try:
+            title = TITLE_FONT.render(self.level_transition_text, False, 'white')
+        except Exception:
+            try:
+                title = pg.font.SysFont(None, 72).render(self.level_transition_text, False, 'white')
+            except Exception:
+                title = None
+        if title:
+            rect = title.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+            self.screen.blit(title, rect)
 
     def draw_damage_popups(self) -> None:
         """绘制并更新受伤浮动文字列表。"""
@@ -747,7 +751,7 @@ class Game:
             self.flash_counter += 1
             score = text_target.sprite.score if text_target.sprite else 0
             was_active = self.game_active
-
+     
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     pg.quit()
@@ -861,8 +865,6 @@ class Game:
                         except Exception:
                             spawn_x = randint(WIDTH, WIDTH * 2)
                         self.items.add(GroundItem(chosen, spawn_x))
-                    elif event.type == self.house_timer:
-                        house.add(House())
                     elif event.type == self.dog_timer and random() <= EASTEREGG_PROB:
                         dog.add(Dog())
                     elif event.type == pg.KEYDOWN and text_target.sprite:
@@ -872,6 +874,23 @@ class Game:
                         self.reset_run_state()
 
             text_target.update()
+
+            # 一次性房屋生成：当到达预定时间且尚未生成时生成房屋
+            if self.game_active and not getattr(self, 'house_spawned', False):
+                spawn_time = getattr(self, 'house_spawn_time_ms', None)
+                if spawn_time is not None and pg.time.get_ticks() >= spawn_time:
+                    try:
+                        house.add(House())
+                    except Exception:
+                        pass
+                    self.house_spawned = True
+
+            # 更新 HUD 动画状态（如平滑血量、徽章淡入淡出）
+            if getattr(self, 'hud', None):
+                try:
+                    self.hud.update()
+                except Exception:
+                    pass
 
             if self.game_active:
                 trees.update()
@@ -966,8 +985,38 @@ class Game:
                 # 如果处于刚刚从运行状态切换过来的情况，播放预游戏音乐
                 if was_active:
                     self.play_pregame_music()
-                # 如果处于 Game Over 展示期，绘制 Game Over 覆盖并倒计时
-                if self.show_game_over:
+                # 如果处于 Victory 或 Game Over 展示期，绘制对应覆盖并倒计时（优先展示 Victory）
+                if self.show_victory:
+                    ms_per_frame = int(1000 / FPS)
+                    self.victory_timer -= ms_per_frame
+                    self.draw_victory()
+                    if self.victory_timer <= 0:
+                        self.show_victory = False
+                        trees.empty()
+                        house.empty()
+                        dog.empty()
+                        try:
+                            self.damage_popups.clear()
+                        except Exception:
+                            pass
+                        self.play_pregame_music()
+                elif self.show_level_transition:
+                    # 在过渡期间显示过渡覆盖并倒计时，过渡结束后恢复游戏
+                    ms_per_frame = int(1000 / FPS)
+                    self.level_transition_timer -= ms_per_frame
+                    self.draw_level_transition()
+                    if self.level_transition_timer <= 0:
+                        # 结束过渡，恢复游戏
+                        self.show_level_transition = False
+                        self.level_transition_timer = 0
+                        # 恢复游戏活动状态并播放关卡音乐
+                        self.game_active = True
+                        try:
+                            # 从当前曲目继续播放或启动下一曲
+                            self.play_next_music()
+                        except Exception:
+                            pass
+                elif self.show_game_over:
                     # 每帧近似减少的毫秒数（使用固定 FPS 近似，以免改动太多计时逻辑）
                     ms_per_frame = int(1000 / FPS)
                     self.game_over_timer -= ms_per_frame
@@ -1014,7 +1063,6 @@ class Game:
                         pass
             except Exception:
                 pass
-
 
 if __name__ == '__main__':
     game = Game()
