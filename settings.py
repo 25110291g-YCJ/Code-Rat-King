@@ -174,9 +174,16 @@ ITEM_TYPES = ['health', 'shield', 'superjump']
 SUPERJUMP_ITEM = 'assets/items/zap.png'
 # 血包道具贴图
 HEALTH_ITEM = 'assets/items/heart.png'
+# 金币道具贴图
+COIN_ITEM = 'assets/items/coin.png'
 # 简单权重（频率），值越大越常见。
 # 调整为：health 0.50, shield 0.30, superjump 0.20（总计 1.0，便于理解与调试）
-ITEM_RARITY = {'health': 0.50, 'shield': 0.30, 'superjump': 0.20}
+ITEM_TYPES = ['health', 'shield', 'superjump', 'coin']
+# 简单权重（频率），加入 coin（金币）用于加分道具
+ITEM_RARITY = {'health': 0.45, 'shield': 0.25, 'superjump': 0.15, 'coin': 0.15}
+
+# 可选：金币声效路径（若无则忽略）
+COIN_SOUND = ''
 
 # 护盾时长（秒）
 SHIELD_DURATION = 3

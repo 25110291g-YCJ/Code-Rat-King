@@ -450,6 +450,18 @@ class Game:
                             pass
                 except Exception:
                     pass
+            elif t == 'coin':
+                # 立即增加分数（+50）
+                try:
+                    if text_target.sprite:
+                        text_target.sprite.score = int(getattr(text_target.sprite, 'score', 0) + 50)
+                except Exception:
+                    pass
+                # 可选播放金币音效
+                try:
+                    pg.mixer.Sound(getattr(settings, 'COIN_SOUND', '')).play()
+                except Exception:
+                    pass
         except Exception:
             pass
 
