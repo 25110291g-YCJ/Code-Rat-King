@@ -6,7 +6,10 @@ from particles import Particle
 
 
 class Trees(pg.sprite.Sprite):
-    """障碍树木精灵，根据当前移动速度向左滚动。"""
+    """Obstacle tree sprite.
+
+    Trees 在场景中作为障碍物出现，随当前移动速度向左滚动。可以通过 spawn_x 指定生成位置。
+    """
 
     def __init__(self, tree_type: str, spawn_x: int | None = None) -> None:
         super().__init__()
@@ -30,14 +33,17 @@ class Trees(pg.sprite.Sprite):
         self.rect = self.image.get_rect(midbottom=(x, GROUND_HEIGHT))
 
     def animation(self) -> None:
+        """Move the tree horizontally according to the scene speed multiplier."""
         # 支持通过 settings.OBSTACLE_SPEED_MULTIPLIER 调整障碍物速度
         speed = settings.CURRENT_MOVING_SPEED * getattr(settings, 'OBSTACLE_SPEED_MULTIPLIER', 1.0)
         self.rect.x -= speed
 
     def destroy(self) -> None:
+        """Remove the sprite when it has moved completely off the left edge of the screen."""
         if self.rect.right < 0:
             self.kill()
 
     def update(self) -> None:
+        """Standard per-frame update: animate (move) and possibly destroy when off-screen."""
         self.animation()
         self.destroy()

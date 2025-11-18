@@ -64,7 +64,12 @@ class Background:
         self.custom_timer = 0
 
     def update(self, move: float) -> None:
-        # 更新偏移量并循环
+        """Update background layer offsets based on movement speed.
+
+        move: horizontal movement magnitude (typically current scene speed).
+        此方法会循环横向偏移并在达到 -WIDTH 时回绕以实现无缝平铺。
+        对于自定义关卡（custom_layers）会优先更新这些层。
+        """
         # 若为自定义关卡（Mine/Volcano 等），优先更新 custom_layers
         if getattr(self, 'current_level', 'sky') != 'sky' and getattr(self, 'custom_layers', None):
             for layer in self.custom_layers:
@@ -99,6 +104,11 @@ class Background:
                 pass
 
     def draw_sky(self, screen: pg.Surface) -> None:
+        """Draw the sky/background layers onto the provided surface.
+
+        如果当前关卡有自定义层（例如 Mine/Volcano），优先绘制 custom_layers；
+        否则绘制预设的 sky_layers。每层绘制两张以实现水平平铺循环。
+        """
         # 如果为自定义关卡（custom_layers），优先绘制 custom_layers
         if getattr(self, 'current_level', 'sky') != 'sky' and getattr(self, 'custom_layers', None):
             for layer in self.custom_layers:
@@ -110,6 +120,11 @@ class Background:
             screen.blit(layer['surf'], (int(layer['x']) + WIDTH, 0))
 
     def draw_ground_mid(self, screen: pg.Surface) -> None:
+        """Draw the middle ground (ground) layer.
+
+        若存在 custom_ground（由 set_level 创建），则绘制 custom_ground；
+        否则使用 ground_layers 的第一层作为中景地面。
+        """
         # 如果 custom_ground 存在，绘制它作为地面
         if getattr(self, 'custom_ground', None):
             try:
@@ -124,6 +139,11 @@ class Background:
             screen.blit(mid['surf'], (int(mid['x']) + WIDTH, mid['y']))
 
     def draw_ground_front(self, screen: pg.Surface) -> None:
+        """Draw the front (foreground) ground layer.
+
+        对于自定义关卡，会选择 custom_layers 的倒数第二层作为前景；
+        否则使用 ground_layers 中的第二层（如果存在）。
+        """
         # custom 层作为前景（若存在多层）
         if getattr(self, 'current_level', 'sky') != 'sky' and getattr(self, 'custom_layers', None):
             try:
@@ -140,6 +160,10 @@ class Background:
             screen.blit(front['surf'], (int(front['x']) + WIDTH, front['y']))
 
     def reset(self) -> None:
+        """Reset all layer horizontal offsets to zero.
+
+        在重新开始运行或切换回默认关卡时使用，确保背景从起始位置开始滚动。
+        """
         try:
             for l in self.sky_layers:
                 l['x'] = 0.0
@@ -155,6 +179,14 @@ class Background:
         """切换到指定关卡背景。
 
         level_name: 'sky' (默认)，'mine'，'voclano'（映射到 assets/background/Volcano）
+        """
+        """Switch the background to the named level.
+
+        参数说明:
+        - level_name: 字符串标识，例如 'sky'、'mine'、'voclano'。
+        行为:
+        - 若为 'sky'，使用默认 SKY/GROUND 图层；
+        - 否则尝试从 assets/background/<folder> 加载所有 png 文件作为自定义层。
         """
         name = (level_name or 'sky').lower()
         self.current_level = name

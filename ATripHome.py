@@ -6,7 +6,7 @@ import pygame as pg
 from settings import *
 import settings
 from hud import HUD
-from cat import Cat
+from player import Player
 from trees import Trees
 from particles import Particle, DustParticle
 from items import GroundItem
@@ -14,6 +14,7 @@ from background import Background
 from dog import Dog
 from house import House
 from text_target import TextTarget
+from boss import Boss, Bullet
 
 
 class Game:
@@ -50,12 +51,12 @@ class Game:
             # 若背景模块或资源加载失败，保留兼容的占位字段
             self.background = None
 
-        # 关卡列表：按顺序推进。每一项为 (level_key, folder_name)
-        # level_key: 用于内部标识（'sky','mine','voclano'），folder_name: assets 子目录（None 使用默认 sky+ground）
+        # 关卡列表:按顺序推进。每一项为 (level_key, folder_name)
+        # level_key: 用于内部标识（'sky','mine','volcano'），folder_name: assets 子目录（None 使用默认 sky+ground）
         self.levels = [
             {'key': 'sky', 'folder': None},
             {'key': 'mine', 'folder': 'Mine'},
-            {'key': 'voclano', 'folder': 'Volcano'},
+            {'key': 'volcano', 'folder': 'Volcano'},
         ]
         self.current_level_index = 0
         # 关卡过渡提示状态
@@ -120,6 +121,13 @@ class Game:
         self.trees_group = trees
         self.house_group = house
         self.dog_group = dog
+        self.boss_group = boss
+        self.bullets_group = bullets
+        
+        # Boss 状态
+        self.boss_active = False  # Boss 是否激活
+        self.boss_spawned = False  # Boss 是否已生成
+        
         # 创建 HUD 管理器（将 HUD 逻辑放到 hud.py）
         try:
             self.hud = HUD(self)
@@ -170,11 +178,11 @@ class Game:
                     pass
 
     def _init_groups(self) -> None:
-        global text_target, cat, trees, house, dog
+        global text_target, cat, trees, house, dog, boss, bullets
         text_target = pg.sprite.GroupSingle()
         text_target.add(TextTarget())
         cat = pg.sprite.GroupSingle()
-        cat.add(Cat())
+        cat.add(Player())  # 使用新的Player类
         trees = pg.sprite.Group()
         house = pg.sprite.GroupSingle()
         dog = pg.sprite.Group()
@@ -182,6 +190,9 @@ class Game:
         self.particles = pg.sprite.Group()
         # 道具组
         self.items = pg.sprite.Group()
+        # Boss 和子弹组
+        boss = pg.sprite.GroupSingle()
+        bullets = pg.sprite.Group()
 
     def play_pregame_music(self) -> None:
         pg.mixer.music.stop()
@@ -203,6 +214,30 @@ class Game:
                 self.particles.add(p)
             except Exception:
                 pass
+
+    def get_rank(self, score: int) -> tuple:
+        """根据分数计算评级等级和颜色。
+        
+        Args:
+            score: 玩家得分
+            
+        Returns:
+            tuple: (评级字母, 颜色RGB元组)
+        """
+        rank_thresholds = getattr(settings, 'RANK_THRESHOLDS', [
+            (200, 'S', (255, 215, 0)),
+            (150, 'A', (255, 100, 100)),
+            (120, 'B', (100, 150, 255)),
+            (80, 'C', (100, 255, 100)),
+            (50, 'D', (200, 200, 200)),
+            (20, 'E', (150, 150, 150)),
+            (0, 'F', (100, 100, 100))
+        ])
+        
+        for threshold, rank, color in rank_thresholds:
+            if score >= threshold:
+                return (rank, color)
+        return ('F', (100, 100, 100))
 
     def display_score(self, score: int) -> None:
         if getattr(self, 'hud', None):
@@ -230,7 +265,12 @@ class Game:
 
         # 检测与树的碰撞：使用较小的碰撞箱比例以减少误碰
         # collide_rect_ratio 返回一个可作为 collided 回调的函数
-        collide_ratio = pg.sprite.collide_rect_ratio(0.7)  # 0.7 可以根据需要调整（0.0-1.0）
+        # 如果玩家正在滑行，降低碰撞检测高度
+        if getattr(cat.sprite, 'is_sliding', False):
+            # 滑行时使用更低的碰撞比例，可以躲过高处的障碍
+            collide_ratio = pg.sprite.collide_rect_ratio(0.5)
+        else:
+            collide_ratio = pg.sprite.collide_rect_ratio(0.7)  # 0.7 可以根据需要调整（0.0-1.0）
         collided_trees = pg.sprite.spritecollide(cat.sprite, trees, False, collided=collide_ratio)
         if collided_trees:
             # 如果护盾激活，则不扣血，直接移除树并播放破碎特效
@@ -347,13 +387,22 @@ class Game:
                     if self.current_level_index < len(self.levels) - 1:
                         self.current_level_index += 1
                         next_level = self.levels[self.current_level_index]
+                        
+                        # 清空上一关的Boss子弹，避免带入新关卡
+                        try:
+                            bullets.empty()
+                        except Exception as e:
+                            print(f"Error clearing bullets: {e}")
+                        
                         # 切换背景（如果 background 可用）
                         try:
                             if getattr(self, 'background', None):
                                 # 使用 Background 提供的 set_level（接受关卡 key）
                                 self.background.set_level(next_level['key'])
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            print(f"Error setting level background: {e}")
+                            import traceback
+                            traceback.print_exc()
                         # 触发关卡过渡提示：暂停游戏并展示文字
                         try:
                             trans_ms = int(getattr(settings, 'LEVEL_TRANSITION_MS', 2000))
@@ -363,8 +412,6 @@ class Game:
                         self.level_transition_text = f'LEVEL {self.current_level_index + 1}'
                         self.level_transition_timer = trans_ms
                         self.show_level_transition = True
-                        # 暂停游戏循环的更新（以便展示过渡界面）
-                        self.game_active = False
                         # 在过渡期间把下一关的房屋生成时间向后偏移，确保是在过渡后再开始计时
                         try:
                             delay_ms = int(getattr(settings, 'HOUSE_FIXED_SPAWN_MS', 60000))
@@ -380,8 +427,11 @@ class Game:
                         self.victory_score = final_score
                         pg.mixer.music.stop()
                         return False
-                except Exception:
-                    # 出现异常时回退为原有胜利逻辑
+                except Exception as e:
+                    # 出现异常时回退为原有胜利逻辑，并打印错误信息
+                    print(f"Critical error in level transition: {e}")
+                    import traceback
+                    traceback.print_exc()
                     final_score = text_target.sprite.score if text_target.sprite else 0
                     self.show_victory = True
                     self.victory_timer = GAME_OVER_DURATION
@@ -403,6 +453,86 @@ class Game:
                     pass
         except Exception:
             pass
+        
+        # 检测与 Boss 子弹的碰撞
+        try:
+            if self.boss_active and cat.sprite:
+                hit_bullets = pg.sprite.spritecollide(cat.sprite, bullets, False)
+                for bullet in hit_bullets:
+                    # 判断玩家是否成功躲避
+                    dodged = False
+                    
+                    if bullet.bullet_type == 'A':
+                        # A类子弹：玩家需要滑行才能躲避
+                        if getattr(cat.sprite, 'is_sliding', False):
+                            dodged = True
+                    elif bullet.bullet_type == 'B':
+                        # B类子弹：玩家站立不动即可躲避（在空中或滑行时会被击中）
+                        if not getattr(cat.sprite, 'is_sliding', False) and cat.sprite.rect.bottom >= GROUND_HEIGHT + getattr(cat.sprite, 'ground_offset', 0):
+                            dodged = True
+                    else:  # C类子弹
+                        # C类子弹：玩家需要跳跃才能躲避
+                        if cat.sprite.rect.bottom < GROUND_HEIGHT + getattr(cat.sprite, 'ground_offset', 0):
+                            dodged = True
+                    
+                    # 移除子弹
+                    bullet.kill()
+                    
+                    # 如果没有躲避成功且没有护盾，扣血
+                    if not dodged:
+                        if getattr(self, 'shield_active', False):
+                            # 有护盾，不扣血但消耗护盾
+                            pass
+                        else:
+                            # 没有护盾且没有无敌时间，扣血
+                            if getattr(cat.sprite, 'damage_timer', 0) <= 0:
+                                self.health -= 1
+                                cat.sprite.damage_timer = settings.DAMAGE_INVULN_FRAMES
+                                self.penalty_flash_timer = PENALTY_FLASH_FRAMES
+                                try:
+                                    self.lose_sound.play()
+                                except Exception:
+                                    pass
+                                try:
+                                    if self.cat_hit_sound:
+                                        self.cat_hit_sound.play()
+                                except Exception:
+                                    pass
+                                try:
+                                    self.trigger_screen_shake(12, 8)
+                                except Exception:
+                                    pass
+                                
+                                # 受伤浮动文字
+                                try:
+                                    popup_x = cat.sprite.rect.centerx
+                                    popup_y = cat.sprite.rect.top - 10
+                                    self.damage_popups.append({
+                                        'x': popup_x,
+                                        'y': popup_y,
+                                        'timer': settings.DAMAGE_POPUP_FRAMES,
+                                        'text': '-1 HP'
+                                    })
+                                except Exception:
+                                    pass
+                                
+                                # 血量耗尽 -> Game Over
+                                if self.health <= 0:
+                                    self.game_active = False
+                                    self.show_game_over = True
+                                    self.game_over_timer = GAME_OVER_DURATION
+                                    self.game_over_score = text_target.sprite.score if text_target.sprite else 0
+                                    pg.mixer.music.stop()
+                                    trees.empty()
+                                    house.empty()
+                                    dog.empty()
+                                    boss.empty()
+                                    bullets.empty()
+                                    return False
+        except Exception as e:
+            print(f"Error in bullet collision: {e}")
+            pass
+        
         return True
 
     def play_next_music(self) -> None:
@@ -450,20 +580,21 @@ class Game:
                             pass
                 except Exception:
                     pass
-            elif t == 'coin':
-                # 立即增加分数（+50）
-                try:
-                    if text_target.sprite:
-                        text_target.sprite.score = int(getattr(text_target.sprite, 'score', 0) + 50)
-                except Exception:
-                    pass
-                # 可选播放金币音效
-                try:
-                    pg.mixer.Sound(getattr(settings, 'COIN_SOUND', '')).play()
-                except Exception:
-                    pass
         except Exception:
             pass
+
+    def spawn_boss(self) -> None:
+        """生成 Boss"""
+        if not self.boss_spawned:
+            boss.add(Boss())
+            self.boss_active = True
+            self.boss_spawned = True
+            # 可选：停止树木生成
+            try:
+                pg.time.set_timer(self.tree_timer, 0)  # 停止树木生成
+            except Exception:
+                pass
+            print("Boss spawned!")  # 调试信息
 
     def reset_run_state(self) -> None:
         self.game_active = True
@@ -483,6 +614,20 @@ class Game:
             self.items.empty()
         except Exception:
             pass
+        
+        # 清理 Boss 和子弹
+        boss.empty()
+        bullets.empty()
+        
+        # Boss 始终存在 - 自动生成
+        try:
+            boss.add(Boss())
+            self.boss_active = True
+            self.boss_spawned = True
+        except Exception as e:
+            print(f"Failed to spawn boss: {e}")
+            self.boss_active = False
+            self.boss_spawned = False
 
         if cat.sprite:
             cat.sprite.super_jump_ready = False
@@ -490,7 +635,8 @@ class Game:
             cat.sprite.gravity = 0
             # 复位猫的位置到可配置的起始 X，并置于地面
             try:
-                cat.sprite.rect = cat.sprite.image.get_rect(midbottom=(CAT_START_X, GROUND_HEIGHT))
+                ground_offset = getattr(cat.sprite, 'ground_offset', 0)
+                cat.sprite.rect = cat.sprite.image.get_rect(midbottom=(CAT_START_X, GROUND_HEIGHT + ground_offset))
                 # 同步站立姿势的 rect（开始界面使用）
                 try:
                     cat.sprite.cat_stand_rect = cat.sprite.cat_stand.get_rect(center=(CAT_START_X, HEIGHT // 2))
@@ -498,7 +644,8 @@ class Game:
                     pass
             except Exception:
                 # 回退：仅重置底部坐标
-                cat.sprite.rect.bottom = GROUND_HEIGHT
+                ground_offset = getattr(cat.sprite, 'ground_offset', 0)
+                cat.sprite.rect.bottom = GROUND_HEIGHT + ground_offset
 
         if text_target.sprite:
             text_target.sprite.score = 0
@@ -649,13 +796,52 @@ class Game:
 
         # 大字 "GAME OVER"
         go_text = TITLE_FONT.render('GAME OVER', False, 'red')
-        go_rect = go_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 40))
+        go_rect = go_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 80))
         self.screen.blit(go_text, go_rect)
 
         # 最终得分
         score_text = SCORE_FONT.render(f'Final Score: {self.game_over_score}', False, 'white')
-        score_rect = score_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 60))
+        score_rect = score_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 20))
         self.screen.blit(score_text, score_rect)
+        
+        # 显示评级
+        try:
+            rank, color = self.get_rank(self.game_over_score)
+            # 创建大号评级字体
+            try:
+                rank_font = pg.font.Font('assets/font/Purrfect.ttf', 120)
+            except Exception:
+                rank_font = pg.font.SysFont(None, 120)
+            
+            rank_text = rank_font.render(rank, True, color)
+            rank_rect = rank_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 180))
+            
+            # 绘制评级背景
+            bg_padding = 20
+            bg_rect = pg.Rect(
+                rank_rect.left - bg_padding,
+                rank_rect.top - bg_padding,
+                rank_rect.width + bg_padding * 2,
+                rank_rect.height + bg_padding * 2
+            )
+            bg_surface = pg.Surface((bg_rect.width, bg_rect.height), pg.SRCALPHA)
+            bg_surface.fill((40, 40, 40, 200))
+            pg.draw.rect(bg_surface, color, bg_surface.get_rect(), 4)
+            self.screen.blit(bg_surface, bg_rect.topleft)
+            
+            # 绘制评级字母
+            self.screen.blit(rank_text, rank_rect)
+            
+            # 绘制 "RANK" 标签
+            try:
+                label_font = pg.font.Font('assets/font/Purrfect.ttf', 24)
+            except Exception:
+                label_font = pg.font.SysFont(None, 24)
+            label_text = label_font.render('RANK', True, (200, 200, 200))
+            label_rect = label_text.get_rect(centerx=WIDTH // 2, bottom=rank_rect.top - 5)
+            self.screen.blit(label_text, label_rect)
+        except Exception:
+            pass
 
     def draw_victory(self) -> None:
         """展示胜利覆盖层（英文）——与 Game Over 类似的样式。"""
@@ -664,12 +850,51 @@ class Game:
         self.screen.blit(overlay, (0, 0))
 
         title = TITLE_FONT.render('YOU MADE IT!', False, 'gold')
-        title_rect = title.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 40))
+        title_rect = title.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 80))
         self.screen.blit(title, title_rect)
 
         score_text = SCORE_FONT.render(f'Final Score: {self.victory_score}', False, 'white')
-        score_rect = score_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 60))
+        score_rect = score_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 20))
         self.screen.blit(score_text, score_rect)
+        
+        # 显示评级
+        try:
+            rank, color = self.get_rank(self.victory_score)
+            # 创建大号评级字体
+            try:
+                rank_font = pg.font.Font('assets/font/Purrfect.ttf', 120)
+            except Exception:
+                rank_font = pg.font.SysFont(None, 120)
+            
+            rank_text = rank_font.render(rank, True, color)
+            rank_rect = rank_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 180))
+            
+            # 绘制评级背景
+            bg_padding = 20
+            bg_rect = pg.Rect(
+                rank_rect.left - bg_padding,
+                rank_rect.top - bg_padding,
+                rank_rect.width + bg_padding * 2,
+                rank_rect.height + bg_padding * 2
+            )
+            bg_surface = pg.Surface((bg_rect.width, bg_rect.height), pg.SRCALPHA)
+            bg_surface.fill((40, 40, 40, 200))
+            pg.draw.rect(bg_surface, color, bg_surface.get_rect(), 4)
+            self.screen.blit(bg_surface, bg_rect.topleft)
+            
+            # 绘制评级字母
+            self.screen.blit(rank_text, rank_rect)
+            
+            # 绘制 "RANK" 标签
+            try:
+                label_font = pg.font.Font('assets/font/Purrfect.ttf', 24)
+            except Exception:
+                label_font = pg.font.SysFont(None, 24)
+            label_text = label_font.render('RANK', True, (200, 200, 200))
+            label_rect = label_text.get_rect(centerx=WIDTH // 2, bottom=rank_rect.top - 5)
+            self.screen.blit(label_text, label_rect)
+        except Exception:
+            pass
 
     def draw_level_transition(self) -> None:
         """在两关之间显示过渡提示（如 "LEVEL 2: MINE"）。"""
@@ -879,8 +1104,13 @@ class Game:
                         self.items.add(GroundItem(chosen, spawn_x))
                     elif event.type == self.dog_timer and random() <= EASTEREGG_PROB:
                         dog.add(Dog())
-                    elif event.type == pg.KEYDOWN and text_target.sprite:
-                        text_target.sprite.process_key(event.key)
+                    elif event.type == pg.KEYDOWN:
+                        # 处理滑行按键
+                        if event.key == getattr(settings, 'SLIDE_KEY', pg.K_DOWN) and cat.sprite:
+                            cat.sprite.start_slide()
+                        # 处理打字输入
+                        elif text_target.sprite:
+                            text_target.sprite.process_key(event.key)
                 else:
                     if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                         self.reset_run_state()
@@ -912,6 +1142,17 @@ class Game:
                 self.items.update()
                 cat.update()
                 self.adjust_difficulty(score)
+                
+                # Boss 系统更新
+                if self.boss_active and boss.sprite:
+                    boss.update()
+                    bullets.update()
+                    
+                    # Boss 射击逻辑
+                    if boss.sprite.should_shoot():
+                        bullet_x, bullet_y, bullet_type = boss.sprite.get_bullet_position()
+                        bullets.add(Bullet(bullet_x, bullet_y, bullet_type))
+                
                 # 更新护盾计时器
                 if getattr(self, 'shield_active', False) and getattr(self, 'shield_timer', 0) > 0:
                     self.shield_timer -= 1
@@ -953,6 +1194,12 @@ class Game:
                             pass
 
                 self.display_score(score)
+                # 绘制评级UI
+                if getattr(self, 'hud', None):
+                    try:
+                        self.hud.display_rank(score)
+                    except Exception:
+                        pass
                 # 绘制物品/得分等 HUD 与实体
                 # self.display_distance()  # 已移除
                 text_target.draw(self.screen)
@@ -963,6 +1210,12 @@ class Game:
                 self.particles.draw(self.screen)
                 house.draw(self.screen)
                 dog.draw(self.screen)
+                
+                # 绘制 Boss 和子弹
+                if self.boss_active:
+                    bullets.draw(self.screen)
+                    boss.draw(self.screen)
+                
                 cat.draw(self.screen)
 
                 # 绘制前景地面（若存在）——放在角色前方，增加层次感
@@ -993,9 +1246,16 @@ class Game:
                 self.draw_health_bar()
                 # 绘制受伤浮动文字
                 self.draw_damage_popups()
+                # 绘制滑行按键提示
+                if getattr(self, 'hud', None):
+                    try:
+                        self.hud.draw_slide_hint()
+                    except Exception:
+                        pass
             else:
                 # 如果处于刚刚从运行状态切换过来的情况，播放预游戏音乐
-                if was_active:
+                # 但如果是关卡过渡、胜利或游戏结束状态，不要播放预游戏音乐
+                if was_active and not (self.show_level_transition or self.show_victory or self.show_game_over):
                     self.play_pregame_music()
                 # 如果处于 Victory 或 Game Over 展示期，绘制对应覆盖并倒计时（优先展示 Victory）
                 if self.show_victory:
@@ -1014,6 +1274,17 @@ class Game:
                         self.play_pregame_music()
                 elif self.show_level_transition:
                     # 在过渡期间显示过渡覆盖并倒计时，过渡结束后恢复游戏
+                    # 先绘制新关卡的背景
+                    if getattr(self, 'background', None):
+                        try:
+                            self.background.draw_sky(self.screen)
+                            self.background.draw_ground_mid(self.screen)
+                        except Exception:
+                            self.screen.fill((0, 0, 0))
+                    else:
+                        self.screen.fill((0, 0, 0))
+                    
+                    # 然后绘制过渡覆盖层
                     ms_per_frame = int(1000 / FPS)
                     self.level_transition_timer -= ms_per_frame
                     self.draw_level_transition()

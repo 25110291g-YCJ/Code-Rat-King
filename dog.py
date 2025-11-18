@@ -23,6 +23,7 @@ class Dog(pg.sprite.Sprite):
         self.rect = self.image.get_rect(midbottom=(WIDTH + DOG_WIDTH, GROUND_HEIGHT))
 
     def run(self) -> None:
+        """每帧移动狗狗：按场景速度向左移动并在移出屏幕后销毁。"""
         # 狗狗速度应与障碍物速度基于同一倍率放大
         speed = settings.CURRENT_MOVING_SPEED * getattr(settings, 'OBSTACLE_SPEED_MULTIPLIER', 1.0) * 2
         self.rect.x -= speed
@@ -30,11 +31,13 @@ class Dog(pg.sprite.Sprite):
             self.kill()
 
     def animation(self) -> None:
+        """Advance animation frame index and update displayed image."""
         self.dog_index += 0.2
         if self.dog_index >= len(self.dog_run):
             self.dog_index = 0
         self.image = self.dog_run[int(self.dog_index)]
 
     def update(self) -> None:
+        """Standard pygame Sprite update: move and animate."""
         self.run()
         self.animation()

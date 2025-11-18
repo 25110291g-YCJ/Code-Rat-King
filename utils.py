@@ -2,10 +2,12 @@ from typing import Tuple
 
 
 def clamp(v: float, lo: float, hi: float) -> float:
+    """Clamp a value v to the inclusive range [lo, hi]."""
     return max(lo, min(hi, v))
 
 
 def lerp(a: float, b: float, t: float) -> float:
+    """Linearly interpolate between a and b by parameter t (clamped 0..1)."""
     return a + (b - a) * clamp(t, 0.0, 1.0)
 
 

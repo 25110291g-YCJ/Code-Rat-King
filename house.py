@@ -5,7 +5,10 @@ from settings import *
 
 
 class House(pg.sprite.Sprite):
-    """终点房屋，猫碰到后视为通关。"""
+    """End-house sprite that acts as a level endpoint.
+
+    House 生成在屏幕右侧并随着场景向左移动；当与猫发生重叠时视为到达关卡终点。
+    """
 
     def __init__(self) -> None:
         super().__init__()
@@ -16,11 +19,13 @@ class House(pg.sprite.Sprite):
         )
 
     def animation(self) -> None:
+        """Move the house left according to obstacle speed multiplier."""
         # 房屋作为终点也随障碍物速度加速
         speed = settings.CURRENT_MOVING_SPEED * getattr(settings, 'OBSTACLE_SPEED_MULTIPLIER', 1.0)
         self.rect.x -= speed
 
     def update(self) -> None:
+        """Per-frame update: animate and remove when off-screen."""
         self.animation()
         if self.rect.right < 0:
             self.kill()

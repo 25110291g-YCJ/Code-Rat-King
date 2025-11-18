@@ -13,7 +13,9 @@ GAMENAME_HEIGHT = HEIGHT // 5  # 游戏名称显示高度
 GAMEMESSAGE_HEIGHT = HEIGHT // 1.25  # 游戏提示信息显示高度
 TEXTTARGET_HEIGHT = GROUND_HEIGHT // 3  # 文本目标显示高度
 SCOREMESSAGE_HEIGHT = HEIGHT//1.25  # 分数信息显示高度
-CAT_WIDTH, CAT_HEIGHT = 162, 141  # 猫咪尺寸
+CAT_WIDTH, CAT_HEIGHT = 162, 141  # 猫咪尺寸（保留兼容性）
+PLAYER_WIDTH, PLAYER_HEIGHT = 162, 200  # 玩家角色尺寸
+PLAYER_GROUND_OFFSET = 33  # 玩家角色脚部到图像底部的偏移（修正悬空问题）
 DOG_WIDTH, DOG_HEIGHT = 162, 141  # 狗狗尺寸
 TREE_WIDTH, TREE_HEIGHT = 264, 333  # 树木尺寸
 HOUSE_WIDTH, HOUSE_HEIGHT = 300, 340  # 房屋尺寸
@@ -46,7 +48,7 @@ HOUSE_SPAWN_FREQ = 56000
 HOUSE_SPAWN_MIN = 35000
 HOUSE_SPAWN_STEP = 5000
 # 固定一次性房屋生成（毫秒）：用于只在开局后固定时刻生成房屋的模式
-HOUSE_FIXED_SPAWN_MS = 60000
+HOUSE_FIXED_SPAWN_MS = 10000
 # 关卡过渡提示持续时长（毫秒）
 LEVEL_TRANSITION_MS = 2000
 DOG_SPAWN_FREQ = 30000
@@ -83,6 +85,36 @@ SUPER_JUMP_FORCE = int(GRAVITY * 1.2)  # 使用 1.2 倍（例如 GRAVITY=-30 时
 SUPER_JUMP_BONUS = 5
 SUPER_JUMP_NOTICE_FRAMES = FPS
 SUPER_JUMP_EFFECT_FRAMES = FPS // 2
+
+# 滑行技能设置
+SLIDE_DURATION = 30  # 滑行持续时间（帧）
+SLIDE_COOLDOWN = 90  # 滑行冷却时间（帧）
+SLIDE_KEY = pg.K_LCTRL  # 滑行按键（左Ctrl）
+
+# Boss 设置
+BOSS_WIDTH = 200  # Boss 宽度
+BOSS_HEIGHT = 200  # Boss 高度
+BOSS_X_POSITION = WIDTH - 150  # Boss X坐标（屏幕右侧）
+BOSS_MOVE_SPEED = 2  # Boss 上下移动速度
+BOSS_MOVE_TOP = 150  # Boss 移动范围上限
+BOSS_MOVE_BOTTOM = HEIGHT - 250  # Boss 移动范围下限
+BOSS_SHOOT_INTERVAL = 120  # Boss 射击间隔（帧）= 2秒
+
+# 子弹设置
+BULLET_SIZE = 20  # 子弹尺寸
+BULLET_SPEED = 8  # 子弹速度
+
+# 评级系统设置
+# 评级等级和对应的分数阈值（更鲜艳醒目的颜色）
+RANK_THRESHOLDS = [
+    (200, 'S', (255, 223, 0)),    # 金色（更亮）
+    (150, 'A', (255, 50, 50)),    # 鲜红色（更鲜艳）
+    (120, 'B', (50, 150, 255)),   # 亮蓝色（更饱和）
+    (80, 'C', (50, 255, 50)),     # 鲜绿色（更明亮）
+    (50, 'D', (255, 150, 50)),    # 橙色（更醒目）
+    (20, 'E', (180, 180, 180)),   # 浅灰色（更明显）
+    (0, 'F', (120, 120, 120))     # 中灰色（提高对比度）
+]
 
 # 单词长度范围
 WORD_BASE_MIN_LENGTH = 4
@@ -174,16 +206,9 @@ ITEM_TYPES = ['health', 'shield', 'superjump']
 SUPERJUMP_ITEM = 'assets/items/zap.png'
 # 血包道具贴图
 HEALTH_ITEM = 'assets/items/heart.png'
-# 金币道具贴图
-COIN_ITEM = 'assets/items/coin.png'
 # 简单权重（频率），值越大越常见。
 # 调整为：health 0.50, shield 0.30, superjump 0.20（总计 1.0，便于理解与调试）
-ITEM_TYPES = ['health', 'shield', 'superjump', 'coin']
-# 简单权重（频率），加入 coin（金币）用于加分道具
-ITEM_RARITY = {'health': 0.45, 'shield': 0.25, 'superjump': 0.15, 'coin': 0.15}
-
-# 可选：金币声效路径（若无则忽略）
-COIN_SOUND = ''
+ITEM_RARITY = {'health': 0.50, 'shield': 0.30, 'superjump': 0.20}
 
 # 护盾时长（秒）
 SHIELD_DURATION = 3

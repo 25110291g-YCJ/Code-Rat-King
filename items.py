@@ -5,9 +5,18 @@ from resources import load_image
 
 
 class GroundItem(pg.sprite.Sprite):
-    """地面道具：支持 'health' 和 'shield' 两种类型。"""
+    """GroundItem 表示地图上的可拾取道具。
+
+    支持类型包括：'health'（回血）、'shield'（临时护盾）、'superjump'（一次超级跳）和 'coin'（加分）。
+    - __init__(item_type, spawn_x): 根据类型尝试加载贴图并设置初始生命（用于过期自动销毁）。
+    - update(): 每帧随场景向左移动并衰减 life，超出屏幕或生命为 0 时自杀（kill）。
+    """
 
     def __init__(self, item_type: str, spawn_x: int) -> None:
+        """Create an item of given type at horizontal position spawn_x.
+
+        spawn_x: 世界坐标（通常 >= WIDTH），用于在屏幕右侧生成道具。
+        """
         super().__init__()
         self.type = item_type
         self.orig_life = getattr(settings, 'ITEM_LIFETIME', FPS * 8)
@@ -55,6 +64,10 @@ class GroundItem(pg.sprite.Sprite):
         self.rect = self.image.get_rect(midbottom=(spawn_x, GROUND_HEIGHT))
 
     def update(self) -> None:
+        """Per-frame update: move left with scene speed and decrease life.
+
+        当道具移出左侧屏幕或其 life 用尽时会被移除。
+        """
         # 随场景左移
         speed = settings.CURRENT_MOVING_SPEED * getattr(settings, 'OBSTACLE_SPEED_MULTIPLIER', 1.0)
         self.rect.x -= speed

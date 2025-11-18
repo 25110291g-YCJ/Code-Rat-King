@@ -19,6 +19,7 @@ class Particle(pg.sprite.Sprite):
         self.life = settings.PARTICLE_LIFETIME
 
     def update(self) -> None:
+        """Per-frame physics update for shard particles: apply gravity and age."""
         # 简单物理：重力加速度
         self.vy += 1
         self.rect.x += self.vx
@@ -47,6 +48,7 @@ class DustParticle(pg.sprite.Sprite):
         self.vy = randint(-8, -2)
 
     def update(self) -> None:
+        """Per-frame update for dust particles: physics + fade-out over life."""
         # 小的重力效果
         self.vy += 1
         self.rect.x += self.vx
