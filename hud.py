@@ -182,6 +182,7 @@ class HUD:
         """
         try:
             import math
+            import random
             
             # 获取评级
             rank, color = self.game.get_rank(score)
@@ -260,6 +261,39 @@ class HUD:
             
             breath_rect = breath_surface.get_rect(center=(rank_x, rank_y))
             self.game.screen.blit(breath_surface, breath_rect)
+
+            # === 1.5 放射状光芒 (God Rays) ===
+            # 仅在 A 和 S 级显示，增加神圣感
+            if rank in ['S', 'A']:
+                ray_surface = pg.Surface((breath_glow_size * 2, breath_glow_size * 2), pg.SRCALPHA)
+                ray_center = (breath_glow_size, breath_glow_size)
+                ray_count = 12
+                # 随时间缓慢旋转
+                ray_angle_offset = self.rank_breath_phase * 0.5
+                
+                for i in range(ray_count):
+                    angle = (i / ray_count) * math.pi * 2 + ray_angle_offset
+                    # 扇形光束
+                    ray_length = breath_glow_size
+                    ray_width = math.pi / ray_count * 0.5
+                    
+                    # 计算三角形顶点
+                    p1 = ray_center
+                    p2 = (
+                        ray_center[0] + math.cos(angle - ray_width) * ray_length,
+                        ray_center[1] + math.sin(angle - ray_width) * ray_length
+                    )
+                    p3 = (
+                        ray_center[0] + math.cos(angle + ray_width) * ray_length,
+                        ray_center[1] + math.sin(angle + ray_width) * ray_length
+                    )
+                    
+                    # 绘制半透明光束
+                    ray_alpha = int(40 * breath_intensity)  # 随呼吸闪烁
+                    pg.draw.polygon(ray_surface, (*self.current_rank_color, ray_alpha), [p1, p2, p3])
+                
+                ray_rect = ray_surface.get_rect(center=(rank_x, rank_y))
+                self.game.screen.blit(ray_surface, ray_rect)
             
             # === 2. 升级光晕效果 ===
             if self.rank_glow_alpha > 0.1:
@@ -282,8 +316,53 @@ class HUD:
                 self.game.screen.blit(glow_surface, glow_rect)
             
             # === 3. 评级字母主体（直接绘制，无背景框）===
+            # 添加阴影增加立体感
+            shadow_offset = 4
+            shadow_text = rank_font.render(rank, True, (0, 0, 0))
+            shadow_rotated = pg.transform.rotate(shadow_text, self.rank_rotation)
+            shadow_scaled = pg.transform.smoothscale(shadow_rotated, (scaled_w, scaled_h))
+            shadow_rect = shadow_scaled.get_rect(center=(rank_x + shadow_offset, rank_y + shadow_offset))
+            
+            # 绘制阴影
+            shadow_surface = pg.Surface(shadow_scaled.get_size(), pg.SRCALPHA)
+            shadow_surface.blit(shadow_scaled, (0, 0))
+            shadow_surface.set_alpha(100) # 半透明阴影
+            self.game.screen.blit(shadow_surface, shadow_rect)
+
+            # 绘制主体
             self.game.screen.blit(scaled_rank, rank_rect)
             
+            # === 3.5 粒子特效 ===
+            # 随机生成上升粒子
+            if random.random() < 0.3: # 30%概率每帧生成
+                if not hasattr(self, 'rank_particles'):
+                    self.rank_particles = []
+                
+                p_x = rank_x + random.randint(-scaled_w//2, scaled_w//2)
+                p_y = rank_y + random.randint(-scaled_h//2, scaled_h//2)
+                self.rank_particles.append({
+                    'x': p_x, 'y': p_y,
+                    'vx': random.uniform(-0.5, 0.5), 'vy': random.uniform(-2, -0.5),
+                    'life': random.randint(20, 40), 'max_life': 40,
+                    'size': random.randint(2, 5)
+                })
+            
+            # 更新和绘制粒子
+            if hasattr(self, 'rank_particles'):
+                for p in self.rank_particles[:]:
+                    p['x'] += p['vx']
+                    p['y'] += p['vy']
+                    p['life'] -= 1
+                    if p['life'] <= 0:
+                        self.rank_particles.remove(p)
+                        continue
+                    
+                    # 粒子绘制
+                    alpha = int((p['life'] / p['max_life']) * 255)
+                    particle_surf = pg.Surface((p['size']*2, p['size']*2), pg.SRCALPHA)
+                    pg.draw.circle(particle_surf, (*self.current_rank_color, alpha), (p['size'], p['size']), p['size'])
+                    self.game.screen.blit(particle_surf, (p['x'] - p['size'], p['y'] - p['size']))
+
             # === 4. 星级装饰 ===
             star_mapping = {'S': 5, 'A': 4, 'B': 3, 'C': 2, 'D': 1, 'E': 1, 'F': 0}
             star_count = star_mapping.get(rank, 0)

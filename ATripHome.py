@@ -589,6 +589,11 @@ class Game:
             boss.add(Boss())
             self.boss_active = True
             self.boss_spawned = True
+            # 触发强烈的屏幕震动
+            try:
+                self.trigger_screen_shake(30, 15)
+            except Exception:
+                pass
             # 可选：停止树木生成
             try:
                 pg.time.set_timer(self.tree_timer, 0)  # 停止树木生成
@@ -1152,6 +1157,11 @@ class Game:
                     if boss.sprite.should_shoot():
                         bullet_x, bullet_y, bullet_type = boss.sprite.get_bullet_position()
                         bullets.add(Bullet(bullet_x, bullet_y, bullet_type))
+                        # 发射子弹时轻微震动
+                        try:
+                            self.trigger_screen_shake(5, 3)
+                        except Exception:
+                            pass
                 
                 # 更新护盾计时器
                 if getattr(self, 'shield_active', False) and getattr(self, 'shield_timer', 0) > 0:
@@ -1318,10 +1328,9 @@ class Game:
                 else:
                     self.draw_home_screen(score)
 
-            pg.display.update()
-
             # 如果处于屏幕抖动状态，将已绘制的画面做随机偏移（帧内平移）
             # 注意：这里对 self.screen 做一次复制并偏移后再刷新屏幕，避免改动大量绘制调用。
+            shaking = False
             try:
                 if getattr(self, 'screen_shake_timer', 0) > 0:
                     # 先消耗计时器
@@ -1330,22 +1339,22 @@ class Game:
                     dur = max(1, getattr(self, 'screen_shake_duration', 1))
                     decay = self.screen_shake_timer / dur
                     mag = int(getattr(self, 'screen_shake_magnitude', 0) * decay)
-                    if mag <= 0:
-                        mag = 0
-                    ox = randint(-mag, mag) if mag > 0 else 0
-                    oy = randint(-mag, mag) if mag > 0 else 0
-                    # 复制当前画面并用偏移覆盖
-                    tmp = self.screen.copy()
-                    # 清空原屏幕（黑色）然后把内容偏移贴回去
-                    try:
-                        self.screen.fill((0, 0, 0))
-                        self.screen.blit(tmp, (ox, oy))
-                        pg.display.update()
-                    except Exception:
-                        # 若任何异常发生，忽略抖动以避免破坏主循环
-                        pass
+                    if mag > 0:
+                        shaking = True
+                        ox = randint(-mag, mag)
+                        oy = randint(-mag, mag)
+                        # 复制当前画面并用偏移覆盖
+                        tmp = self.screen.copy()
+                        # 清空原屏幕（黑色）然后把内容偏移贴回去
+                        try:
+                            self.screen.fill((0, 0, 0))
+                            self.screen.blit(tmp, (ox, oy))
+                        except Exception:
+                            pass
             except Exception:
                 pass
+
+            pg.display.update()
 
 if __name__ == '__main__':
     game = Game()

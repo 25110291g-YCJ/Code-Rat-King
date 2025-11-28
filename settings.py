@@ -35,7 +35,7 @@ CURRENT_MOVING_SPEED = MOVING_SPEED
 TARGET_FONT = pg.font.Font('assets/font/BubblegumSans.ttf', 150)
 SCORE_FONT = pg.font.Font('assets/font/Purrfect.ttf', 100)
 TITLE_FONT = pg.font.Font('assets/font/KittenSwash.ttf', 100)
-TARGET_TEXT_COLOR = 'mediumslateblue'
+TARGET_TEXT_COLOR = 'white'
 TARGET_ALERT_COLOR = 'salmon'
 SUPER_JUMP_TEXT_COLOR = 'gold'
 
@@ -107,11 +107,11 @@ BULLET_SPEED = 8  # 子弹速度
 # 评级系统设置
 # 评级等级和对应的分数阈值（更鲜艳醒目的颜色）
 RANK_THRESHOLDS = [
-    (200, 'S', (255, 223, 0)),    # 金色（更亮）
-    (150, 'A', (255, 50, 50)),    # 鲜红色（更鲜艳）
-    (120, 'B', (50, 150, 255)),   # 亮蓝色（更饱和）
-    (80, 'C', (50, 255, 50)),     # 鲜绿色（更明亮）
-    (50, 'D', (255, 150, 50)),    # 橙色（更醒目）
+    (150, 'S', (255, 223, 0)),    # 金色（更亮）
+    (120, 'A', (255, 50, 50)),    # 鲜红色（更鲜艳）
+    (90, 'B', (50, 150, 255)),    # 亮蓝色（更饱和）
+    (60, 'C', (50, 255, 50)),     # 鲜绿色（更明亮）
+    (40, 'D', (255, 150, 50)),    # 橙色（更醒目）
     (20, 'E', (180, 180, 180)),   # 浅灰色（更明显）
     (0, 'F', (120, 120, 120))     # 中灰色（提高对比度）
 ]
@@ -223,5 +223,25 @@ INGAME_MUSIC = ['assets/music/HappyTune.mp3',
                 'assets/music/TakeATrip.ogg', 'assets/music/TownTheme.mp3']
 
 # 词库（用于打字目标）
-WORDBANK = ["apple", "banana", "cactus", "dolphin", "elephant", "fitness", "guitar", "happiness", "island", "jacket", "kitchen", "lovely", "money", "network", "ocean", "paradise", "question", "romantic", "sunset", "tourist", "universe", "vacation", "wonderful", "xylophone", "yellow", "zebra", "airport", "beautiful", "capital", "dance", "education", "freedom", "government", "hospital", "internet", "journey", "knowledge", "library", "medicine", "natural", "oasis", "peaceful", "quality", "romance", "success", "television", "ultimate", "victory", "wealth", "extraordinary", "friendship", "generous", "hospitality", "imagination", "jubilant", "kindness", "laughter", "miracle", "nature", "optimistic", "passionate", "quest", "romanticism", "satisfied", "triumph", "unbelievable", "vibrant", "wisdom", "xenial", "youthful", "zestful", "adventure", "beauty", "challenge", "dazzling", "excitement", "friendship", "generosity", "honesty", "innovation", "joyful", "kindhearted", "luxury", "music", "optimism", "passion", "quaint", "romance", "satisfaction", "travelling", "understanding", "vitality", "warmth", "xtraordinary", "youthfulness", "zeal", "affection", "blessed", "charming", "delight", "enthusiasm", "fascinating", "generous", "humility", "innovative", "jovial", "kindness", "love", "marvelous", "nourishing", "optimistic", "peace", "quality", "relaxation", "sensual", "thriving", "uplifting", "vibrance",
-            "wholesome", "xceptional", "youthful", "zest", "abundance", "blissful", "calmness", "delightful", "exciting", "fantastic", "graceful", "harmony", "inspiration", "jubilation", "kindness", "lovely", "majestic", "nurturing", "oceanic", "pleasure", "quaintness", "rejuvenating", "serenity", "tranquility", "unforgettable", "vibrant", "wondrous", "xeniality", "youthfulness", "zealot", "affectionate", "breathtaking", "charming", "dazzling", "energetic", "flourishing", "glorious", "heavenly", "impressive", "joviality", "knightly", "loveable", "magnificent", "nourished", "oasis", "pleasurable", "quintessential", "refreshing", "spectacular", "thriving", "unforgotten", "vitality", "wondrous", "xpert", "yearning", "zestful", "adoration", "brilliant", "captivating", "delighted", "elegance", "fascinating", "gallant", "heartwarming", "innovative", "jubilant", "knight", "lovely", "mesmerizing", "nourishing", "optimistic", "peaceable", "pleased", "quaint", "relaxing", "satisfied", "tranquil", "unforgettable", "vibrance", "wholesome", "xceptional", "yielding", "zealous", "affectionate", "breathtaking", "charming", "dazzling", "enthusiastic", "flourishing", "glowing", "heavenly", "impressive", "jovial", "kindred", "loving", "mesmerizing", "nourished", "optimism", "peaceful", "pleased", "quaintness", "refreshing", "sensational", "thriving", "unforgotten", "vibrant", "warmhearted", "xpertise", "youthful", "zestful"]
+WORDBANK = [
+    {'en': 'python', 'zh': 'Python语言'}, {'en': 'import', 'zh': '导入'}, {'en': 'return', 'zh': '返回'},
+    {'en': 'class', 'zh': '类'}, {'en': 'def', 'zh': '定义函数'}, {'en': 'yield', 'zh': '产出'},
+    {'en': 'print', 'zh': '打印'}, {'en': 'range', 'zh': '范围'}, {'en': 'input', 'zh': '输入'},
+    {'en': 'open', 'zh': '打开'}, {'en': 'string', 'zh': '字符串'}, {'en': 'integer', 'zh': '整数'},
+    {'en': 'float', 'zh': '浮点数'}, {'en': 'boolean', 'zh': '布尔值'}, {'en': 'list', 'zh': '列表'},
+    {'en': 'tuple', 'zh': '元组'}, {'en': 'dictionary', 'zh': '字典'}, {'en': 'set', 'zh': '集合'},
+    {'en': 'module', 'zh': '模块'}, {'en': 'package', 'zh': '包'}, {'en': 'library', 'zh': '库'},
+    {'en': 'framework', 'zh': '框架'}, {'en': 'django', 'zh': 'Django框架'}, {'en': 'flask', 'zh': 'Flask框架'},
+    {'en': 'pandas', 'zh': 'Pandas库'}, {'en': 'numpy', 'zh': 'NumPy库'}, {'en': 'variable', 'zh': '变量'},
+    {'en': 'function', 'zh': '函数'}, {'en': 'method', 'zh': '方法'}, {'en': 'object', 'zh': '对象'},
+    {'en': 'attribute', 'zh': '属性'}, {'en': 'argument', 'zh': '实参'}, {'en': 'parameter', 'zh': '形参'},
+    {'en': 'syntax', 'zh': '语法'}, {'en': 'error', 'zh': '错误'}, {'en': 'exception', 'zh': '异常'},
+    {'en': 'debug', 'zh': '调试'}, {'en': 'compile', 'zh': '编译'}, {'en': 'loop', 'zh': '循环'},
+    {'en': 'condition', 'zh': '条件'}, {'en': 'statement', 'zh': '语句'}, {'en': 'expression', 'zh': '表达式'},
+    {'en': 'operator', 'zh': '运算符'}, {'en': 'inheritance', 'zh': '继承'}, {'en': 'polymorphism', 'zh': '多态'},
+    {'en': 'encapsulation', 'zh': '封装'}, {'en': 'abstraction', 'zh': '抽象'}, {'en': 'interface', 'zh': '接口'},
+    {'en': 'instance', 'zh': '实例'}, {'en': 'algorithm', 'zh': '算法'}, {'en': 'database', 'zh': '数据库'},
+    {'en': 'server', 'zh': '服务器'}, {'en': 'client', 'zh': '客户端'}, {'en': 'request', 'zh': '请求'},
+    {'en': 'response', 'zh': '响应'}, {'en': 'api', 'zh': '接口'}, {'en': 'json', 'zh': 'JSON格式'},
+    {'en': 'script', 'zh': '脚本'}, {'en': 'automation', 'zh': '自动化'}, {'en': 'testing', 'zh': '测试'}
+]

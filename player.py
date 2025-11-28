@@ -55,22 +55,26 @@ class Player(pg.sprite.Sprite):
 
     def _load_animations(self) -> None:
         """加载角色的各种动画帧。"""
-        base_path = 'assets/character'
-        
-        # 加载待机动画
-        self.idle_frames = self._load_animation_frames(os.path.join(base_path, 'Idle'), self.char_width, self.char_height)
+        # 修改为新的资源路径 assets/shushu
+        base_path = 'assets/shushu'
         
         # 加载跑步动画
-        self.run_frames = self._load_animation_frames(os.path.join(base_path, 'Running'), self.char_width, self.char_height)
+        self.run_frames = self._load_animation_frames(os.path.join(base_path, 'run'), self.char_width, self.char_height)
+        
+        # 加载待机动画 (使用跑步的第一帧作为待机)
+        if self.run_frames:
+            self.idle_frames = [self.run_frames[0]]
+        else:
+            self.idle_frames = []
         
         # 加载跳跃动画
-        self.jump_frames = self._load_animation_frames(os.path.join(base_path, 'Jump Start'), self.char_width, self.char_height)
+        self.jump_frames = self._load_animation_frames(os.path.join(base_path, 'jump'), self.char_width, self.char_height)
         
-        # 加载滑行动画
-        self.slide_frames = self._load_animation_frames(os.path.join(base_path, 'Sliding'), self.char_width, self.char_height)
+        # 加载滑行动画 (对应 dun 文件夹)
+        self.slide_frames = self._load_animation_frames(os.path.join(base_path, 'dun'), self.char_width, self.char_height)
         
-        # 加载受伤动画（可选）
-        self.hurt_frames = self._load_animation_frames(os.path.join(base_path, 'Hurt'), self.char_width, self.char_height)
+        # 加载受伤动画 (暂无，使用跑步帧代替)
+        self.hurt_frames = self.run_frames
         
         # 如果某个动画加载失败，使用备用
         if not self.idle_frames:

@@ -16,20 +16,106 @@ class TextTarget(pg.sprite.Sprite):
         self.feedback_color = TARGET_TEXT_COLOR
         self.feedback_timer = 0
         self.combo_count = 0
-        self.candidate = ''
+        
+        # New state variables for better rendering
+        self.full_text = ''
+        self.zh_text = ''
+        self.typed_index = 0
+        
         self.hit_sound = pg.mixer.Sound(HIT_SOUND)
         self.pick_new_word()
 
     def update_text(self) -> None:
-        self.image = TARGET_FONT.render(self.candidate, False, self.feedback_color)
+        # Fonts
+        font = TARGET_FONT
+        try:
+            # Try to use Microsoft YaHei for Chinese support on Windows
+            zh_font = pg.font.SysFont("microsoftyahei", 40)
+        except:
+            zh_font = pg.font.SysFont(None, 40)
+
+        # Render parts
+        typed_part = self.full_text[:self.typed_index]
+        untyped_part = self.full_text[self.typed_index:]
+        
+        # Colors
+        typed_color = (255, 215, 0) # Gold for typed part
+        untyped_color = self.feedback_color
+        shadow_color = (0, 0, 0)
+        
+        # Render surfaces
+        typed_surf = font.render(typed_part, False, typed_color)
+        untyped_surf = font.render(untyped_part, False, untyped_color)
+        
+        # Calculate total width for English text
+        en_width = typed_surf.get_width() + untyped_surf.get_width()
+        en_height = max(typed_surf.get_height(), untyped_surf.get_height())
+        
+        # Render Chinese
+        if self.zh_text:
+            zh_surf = zh_font.render(self.zh_text, True, (240, 240, 240))
+            # Add shadow for Chinese text too
+            zh_shadow_surf = zh_font.render(self.zh_text, True, (0, 0, 0))
+            
+            total_width = max(en_width, zh_surf.get_width()) + 20
+            total_height = en_height + zh_surf.get_height() + 15
+        else:
+            zh_surf = None
+            total_width = en_width + 20
+            total_height = en_height + 10
+            
+        # Create main surface
+        self.image = pg.Surface((total_width, total_height), pg.SRCALPHA)
+        
+        # Center English text horizontally
+        en_x = (total_width - en_width) // 2
+        
+        # Draw Shadow for English text (offset 4, 4)
+        full_word_shadow = font.render(self.full_text, False, shadow_color)
+        self.image.blit(full_word_shadow, (en_x + 4, 4))
+        
+        # Draw Typed and Untyped
+        self.image.blit(typed_surf, (en_x, 0))
+        self.image.blit(untyped_surf, (en_x + typed_surf.get_width(), 0))
+        
+        # Draw Chinese centered below
+        if zh_surf:
+            zh_x = (total_width - zh_surf.get_width()) // 2
+            # Draw Chinese shadow
+            self.image.blit(zh_shadow_surf, (zh_x + 2, en_height + 7))
+            # Draw Chinese text
+            self.image.blit(zh_surf, (zh_x, en_height + 5))
+            
         self.rect = self.image.get_rect(center=(WIDTH // 2, TEXTTARGET_HEIGHT))
 
     def pick_new_word(self) -> None:
         min_len, max_len = self.word_length_range
-        candidates = [word for word in WORDBANK if min_len <= len(word) <= max_len]
-        if not candidates:
-            candidates = WORDBANK
-        self.candidate = choice(candidates)
+        
+        # Filter candidates
+        valid_candidates = []
+        for item in WORDBANK:
+            if isinstance(item, dict):
+                word = item['en']
+            else:
+                word = item
+            
+            if min_len <= len(word) <= max_len:
+                valid_candidates.append(item)
+        
+        if not valid_candidates:
+            valid_candidates = WORDBANK
+
+        choice_item = choice(valid_candidates)
+        
+        if isinstance(choice_item, dict):
+            self.full_text = choice_item['en']
+            self.zh_text = choice_item['zh']
+        else:
+            self.full_text = choice_item
+            self.zh_text = ""
+            
+        self.typed_index = 0
+        self.candidate = self.full_text # Keep for compatibility if needed, but logic uses full_text
         self.update_text()
 
     def set_word_length_range(self, min_len: int, max_len: int) -> None:
@@ -40,20 +126,25 @@ class TextTarget(pg.sprite.Sprite):
         )
 
     def process_key(self, key: int) -> None:
-        if not self.candidate:
+        if not self.full_text:
             return
         key_name = pg.key.name(key)
         if len(key_name) != 1 or not key_name.isalpha():
             return
         pressed = key_name.lower()
-        target = self.candidate[0]
+        
+        # Check if we are done
+        if self.typed_index >= len(self.full_text):
+            return
+
+        target = self.full_text[self.typed_index]
         if pressed == target:
             self._handle_correct_letter()
         else:
             self._handle_miss()
 
     def _handle_correct_letter(self) -> None:
-        self.candidate = self.candidate[1:]
+        self.typed_index += 1
         self.letter_count += 1
         # 增加连击计数并根据连击倍率计算分数
         self.combo_count += 1
@@ -67,7 +158,9 @@ class TextTarget(pg.sprite.Sprite):
         self.feedback_timer = 0
         self.hit_sound.play()
         self.update_text()
-        if not self.candidate:
+        
+        # Check completion
+        if self.typed_index >= len(self.full_text):
             pg.event.post(pg.event.Event(CORRECT_TYPING))
             self.pick_new_word()
         self._check_combo_reward()
