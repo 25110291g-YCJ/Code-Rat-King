@@ -174,6 +174,7 @@ class Game:
             self.tutorial_info_font = pg.font.SysFont(None, 40)
             self.tutorial_desc_font = pg.font.SysFont(None, 30)
             self.rank_font = pg.font.SysFont(None, 120)
+        print("Game initialized")
 
     def draw_active_effects(self) -> None:
         """绘制当前激活的持续性效果（如护盾）的 HUD 徽章与计时条。"""
@@ -701,7 +702,12 @@ class Game:
             print("Boss spawned!")  # 调试信息
 
     def reset_run_state(self) -> None:
-        self.game_active = True
+        # Start with transition to Level 1
+        self.game_active = False
+        self.show_level_transition = True
+        self.level_transition_timer = getattr(settings, 'LEVEL_TRANSITION_MS', 2000)
+        self.level_transition_text = 'Level 1'
+
         self.flash_counter = 0
         self.penalty_flash_timer = 0
         self.super_jump_notice_timer = 0
@@ -1011,7 +1017,10 @@ class Game:
         boss_img_path = None
         boss_name = ""
         
-        if self.current_level_index == 1:
+        if self.current_level_index == 0:
+            boss_img_path = 'assets/boss/boss/simon/0_Archer_Running_007-1.png'
+            boss_name = "BOSS: SIMON"
+        elif self.current_level_index == 1:
             boss_img_path = 'assets/boss/boss/david/0_Archer_Running_007-1.png'
             boss_name = "BOSS: DAVID"
         elif self.current_level_index == 2:
