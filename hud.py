@@ -170,9 +170,6 @@ class HUD:
         except Exception:
             pass
 
-    def display_distance(self) -> None:
-        # 保留占位以兼容调用；目前不显示距离
-        return
 
     def display_rank(self, score: int) -> None:
         """显示动态评级UI，位于屏幕左侧中间，简洁版（无遮罩、无扫光）。

@@ -54,9 +54,9 @@ class Game:
         # 关卡列表:按顺序推进。每一项为 (level_key, folder_name)
         # level_key: 用于内部标识（'sky','mine','volcano'），folder_name: assets 子目录（None 使用默认 sky+ground）
         self.levels = [
-            {'key': 'sky', 'folder': None},
-            {'key': 'mine', 'folder': 'Mine'},
-            {'key': 'volcano', 'folder': 'Volcano'},
+            {'key': 'scene1', 'folder': None},
+            {'key': 'scene2', 'folder': None},
+            {'key': 'scene3', 'folder': None},
         ]
         self.current_level_index = 0
         # 关卡过渡提示状态
@@ -246,11 +246,6 @@ class Game:
         score_rect = score_text.get_rect(right=WIDTH - 40, top=30)
         self.screen.blit(score_text, score_rect)
 
-    def display_distance(self) -> None:
-        """已移除：HUD 不再显示到终点的距离与 ETA（保留该函数以保持调用兼容）。"""
-        if getattr(self, 'hud', None):
-            return self.hud.display_distance()
-        return
 
     def collision(self) -> bool:
         if not cat.sprite:
@@ -1127,7 +1122,8 @@ class Game:
                 spawn_time = getattr(self, 'house_spawn_time_ms', None)
                 if spawn_time is not None and pg.time.get_ticks() >= spawn_time:
                     try:
-                        house.add(House())
+                        # 传入当前关卡索引，以便 House 加载正确的出口图片
+                        house.add(House(self.current_level_index))
                     except Exception:
                         pass
                     self.house_spawned = True
@@ -1211,7 +1207,6 @@ class Game:
                     except Exception:
                         pass
                 # 绘制物品/得分等 HUD 与实体
-                # self.display_distance()  # 已移除
                 text_target.draw(self.screen)
                 trees.draw(self.screen)
                 # 绘制道具在树之后/地面之上

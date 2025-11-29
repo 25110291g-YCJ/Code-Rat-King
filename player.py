@@ -29,8 +29,8 @@ class Player(pg.sprite.Sprite):
         self.slide_cooldown = 0  # 滑行冷却时间
         
         # 角色尺寸（可根据实际资源调整）
-        self.char_width = getattr(settings, 'PLAYER_WIDTH', CAT_WIDTH)
-        self.char_height = getattr(settings, 'PLAYER_HEIGHT', CAT_HEIGHT)
+        self.char_width = getattr(settings, 'PLAYER_WIDTH', settings.CAT_WIDTH)
+        self.char_height = getattr(settings, 'PLAYER_HEIGHT', settings.CAT_HEIGHT)
         
         # 加载各种动画
         self._load_animations()
@@ -40,14 +40,14 @@ class Player(pg.sprite.Sprite):
         
         # 初始图像和位置
         self.image = self.idle_frames[0] if self.idle_frames else pg.Surface((self.char_width, self.char_height))
-        self.rect = self.image.get_rect(midbottom=(CAT_START_X, GROUND_HEIGHT + self.ground_offset))
+        self.rect = self.image.get_rect(midbottom=(settings.CAT_START_X, settings.GROUND_HEIGHT + self.ground_offset))
         
         # 站立姿势（用于开始界面）- 使用cat_stand保持兼容性
         self.cat_stand = pg.transform.scale(self.image, (self.char_width * 2, self.char_height * 2))
-        self.cat_stand_rect = self.cat_stand.get_rect(center=(CAT_START_X, HEIGHT // 2))
+        self.cat_stand_rect = self.cat_stand.get_rect(center=(settings.CAT_START_X, settings.HEIGHT // 2))
         
         # 音效
-        self.jump_sound = pg.mixer.Sound(JUMP_SOUND)
+        self.jump_sound = pg.mixer.Sound(settings.JUMP_SOUND)
         try:
             self.slide_sound = pg.mixer.Sound('assets/sound effect/slide.wav')
         except:

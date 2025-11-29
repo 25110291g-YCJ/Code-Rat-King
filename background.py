@@ -64,12 +64,7 @@ class Background:
         self.custom_timer = 0
 
     def update(self, move: float) -> None:
-        """Update background layer offsets based on movement speed.
-
-        move: horizontal movement magnitude (typically current scene speed).
-        此方法会循环横向偏移并在达到 -WIDTH 时回绕以实现无缝平铺。
-        对于自定义关卡（custom_layers）会优先更新这些层。
-        """
+        # 更新偏移量并循环
         # 若为自定义关卡（Mine/Volcano 等），优先更新 custom_layers
         if getattr(self, 'current_level', 'sky') != 'sky' and getattr(self, 'custom_layers', None):
             for layer in self.custom_layers:
@@ -104,11 +99,6 @@ class Background:
                 pass
 
     def draw_sky(self, screen: pg.Surface) -> None:
-        """Draw the sky/background layers onto the provided surface.
-
-        如果当前关卡有自定义层（例如 Mine/Volcano），优先绘制 custom_layers；
-        否则绘制预设的 sky_layers。每层绘制两张以实现水平平铺循环。
-        """
         # 如果为自定义关卡（custom_layers），优先绘制 custom_layers
         if getattr(self, 'current_level', 'sky') != 'sky' and getattr(self, 'custom_layers', None):
             for layer in self.custom_layers:
@@ -120,11 +110,6 @@ class Background:
             screen.blit(layer['surf'], (int(layer['x']) + WIDTH, 0))
 
     def draw_ground_mid(self, screen: pg.Surface) -> None:
-        """Draw the middle ground (ground) layer.
-
-        若存在 custom_ground（由 set_level 创建），则绘制 custom_ground；
-        否则使用 ground_layers 的第一层作为中景地面。
-        """
         # 如果 custom_ground 存在，绘制它作为地面
         if getattr(self, 'custom_ground', None):
             try:
@@ -139,11 +124,10 @@ class Background:
             screen.blit(mid['surf'], (int(mid['x']) + WIDTH, mid['y']))
 
     def draw_ground_front(self, screen: pg.Surface) -> None:
-        """Draw the front (foreground) ground layer.
+        # Scene 1 和 Scene 3 已经调整了背景高度，不需要前景覆盖，否则会遮挡
+        if getattr(self, 'current_level', '') in ['scene1', 'scene3']:
+            return
 
-        对于自定义关卡，会选择 custom_layers 的倒数第二层作为前景；
-        否则使用 ground_layers 中的第二层（如果存在）。
-        """
         # custom 层作为前景（若存在多层）
         if getattr(self, 'current_level', 'sky') != 'sky' and getattr(self, 'custom_layers', None):
             try:
@@ -160,10 +144,6 @@ class Background:
             screen.blit(front['surf'], (int(front['x']) + WIDTH, front['y']))
 
     def reset(self) -> None:
-        """Reset all layer horizontal offsets to zero.
-
-        在重新开始运行或切换回默认关卡时使用，确保背景从起始位置开始滚动。
-        """
         try:
             for l in self.sky_layers:
                 l['x'] = 0.0
@@ -179,14 +159,6 @@ class Background:
         """切换到指定关卡背景。
 
         level_name: 'sky' (默认)，'mine'，'voclano'（映射到 assets/background/Volcano）
-        """
-        """Switch the background to the named level.
-
-        参数说明:
-        - level_name: 字符串标识，例如 'sky'、'mine'、'voclano'。
-        行为:
-        - 若为 'sky'，使用默认 SKY/GROUND 图层；
-        - 否则尝试从 assets/background/<folder> 加载所有 png 文件作为自定义层。
         """
         name = (level_name or 'sky').lower()
         self.current_level = name
@@ -227,6 +199,57 @@ class Background:
                 except Exception:
                     pass
                 self.ground_layers.append({'surf': surf, 'x': 0.0, 'speed': float(sp), 'y': GROUND_HEIGHT})
+            return
+
+        # 处理新的 coding 场景
+        if name in ['scene1', 'scene2', 'scene3']:
+            base_path = os.path.join('assets', 'background', 'coding')
+            
+            # 默认尺寸
+            target_width = WIDTH
+            target_height = HEIGHT
+
+            if name == 'scene1':
+                filenames = ['场景1背景.PNG', '场景1出口.PNG']
+                # 调整 Scene 1 的高度，使其不覆盖地面区域
+                target_height = GROUND_HEIGHT
+            elif name == 'scene2':
+                filenames = ['场景2背景.PNG', '场景2出口.PNG']
+            elif name == 'scene3':
+                filenames = ['场景3背景.PNG', '场景3窗户.PNG', '场景3垃圾桶.PNG', '场景3出口.PNG']
+                # 调整 Scene 3 的高度，使其不覆盖地面区域
+                target_height = GROUND_HEIGHT
+            else:
+                filenames = []
+            
+            files = [os.path.join(base_path, f) for f in filenames]
+            
+            # Load layers
+            base_speed = 0.12
+            speed_step = 0.12
+            self.custom_layers = []
+            for i, fp in enumerate(files):
+                try:
+                    # 使用动态设置的尺寸加载图片
+                    img = load_image(fp, size=(target_width, target_height), convert_alpha=True)
+                    speed = base_speed + i * speed_step
+                    self.custom_layers.append({'surf': img, 'x': 0.0, 'speed': float(speed)})
+                except Exception:
+                    continue
+            
+            # Set custom ground (使用最后一层作为地面参考)
+            try:
+                if name in ['scene1', 'scene3']:
+                    # Scene 1 和 Scene 3 使用纯灰色地面
+                    g_surf = pg.Surface((WIDTH, GROUND_DEPTH))
+                    g_surf.fill((100, 100, 100))
+                    self.custom_ground = {'surf': g_surf, 'x': 0.0, 'speed': 1.0, 'y': GROUND_HEIGHT}
+                elif self.custom_layers:
+                    last = self.custom_layers[-1]
+                    ground_surf = pg.transform.scale(last['surf'], (WIDTH, GROUND_DEPTH))
+                    self.custom_ground = {'surf': ground_surf, 'x': 0.0, 'speed': float(last.get('speed', 1.0)), 'y': GROUND_HEIGHT}
+            except Exception:
+                self.custom_ground = None
             return
 
         # 试图加载自定义文件夹下的 png 作为分层图（支持 Mine, Volcano 等）

@@ -2,7 +2,6 @@ from random import choice
 
 import pygame as pg
 from settings import *
-import settings
 
 
 class TextTarget(pg.sprite.Sprite):

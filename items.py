@@ -1,6 +1,5 @@
 import pygame as pg
 import settings
-from settings import *
 from resources import load_image
 
 
@@ -10,7 +9,7 @@ class GroundItem(pg.sprite.Sprite):
     def __init__(self, item_type: str, spawn_x: int) -> None:
         super().__init__()
         self.type = item_type
-        self.orig_life = getattr(settings, 'ITEM_LIFETIME', FPS * 8)
+        self.orig_life = getattr(settings, 'ITEM_LIFETIME', settings.FPS * 8)
         self.life = self.orig_life
         # 简单绘制：若没有专用贴图，则用基本图形表示
         w, h = 48, 48
@@ -42,7 +41,7 @@ class GroundItem(pg.sprite.Sprite):
         except Exception:
             surf.fill((200, 200, 200))
         self.image = surf
-        self.rect = self.image.get_rect(midbottom=(spawn_x, GROUND_HEIGHT))
+        self.rect = self.image.get_rect(midbottom=(spawn_x, settings.GROUND_HEIGHT))
 
     def update(self) -> None:
         # 随场景左移

@@ -3,8 +3,8 @@
 Run this to catch ImportError / syntax errors in modules after refactors.
 """
 MODULES = [
-    'settings', 'resources', 'audio', 'utils',
-    'cat', 'dog', 'house', 'trees', 'particles', 'items', 'background', 'hud', 'text_target'
+    'settings', 'resources',
+    'player', 'dog', 'house', 'trees', 'particles', 'items', 'background', 'hud', 'text_target', 'boss'
 ]
 
 errors = []
