@@ -3,6 +3,8 @@ import pygame as pg
 from settings import *
 import settings
 from random import choice, randint
+import os
+from resources import list_pngs, load_image
 
 
 class Bullet(pg.sprite.Sprite):
@@ -60,23 +62,54 @@ class Bullet(pg.sprite.Sprite):
 class Boss(pg.sprite.Sprite):
     """Boss 敌人"""
     
-    def __init__(self):
+    def __init__(self, boss_name: str = 'simon'):
         super().__init__()
         
         # Boss 尺寸
         self.boss_width = getattr(settings, 'BOSS_WIDTH', 200)
         self.boss_height = getattr(settings, 'BOSS_HEIGHT', 200)
         
-        # 加载 Boss 图像
+        # 加载 Boss 动画帧
+        self.frames = []
+        self.frame_index = 0
+        self.animation_speed = 0.15
+        
         try:
-            boss_img = pg.image.load('assets/boss/Idle_000.png').convert_alpha()
-            self.image = pg.transform.scale(boss_img, (self.boss_width, self.boss_height))
+            # 尝试加载指定 Boss 的动画帧
+            # 映射 boss_name 到文件夹名 (simon, david, gio)
+            # 确保 boss_name 是小写
+            name = boss_name.lower()
+            folder_path = os.path.join('assets', 'boss', 'boss', name)
+            
+            # 如果文件夹不存在，尝试直接用 boss_name (兼容旧逻辑)
+            if not os.path.exists(folder_path):
+                 # 尝试默认路径
+                 pass
+
+            frame_files = list_pngs(folder_path)
+            
+            if not frame_files:
+                # 如果找不到，尝试加载默认 Idle
+                # print(f"Warning: No frames found for boss '{name}', using default.")
+                try:
+                    boss_img = pg.image.load('assets/boss/Idle_000.png').convert_alpha()
+                    self.frames = [pg.transform.scale(boss_img, (self.boss_width, self.boss_height))]
+                except:
+                    raise Exception("Default image not found")
+            else:
+                for f in frame_files:
+                    img = load_image(f, size=(self.boss_width, self.boss_height), convert_alpha=True)
+                    self.frames.append(img)
+                    
         except Exception as e:
             print(f"Warning: Failed to load boss image: {e}")
             # 使用占位图像
             self.image = pg.Surface((self.boss_width, self.boss_height))
             self.image.fill((128, 0, 128))  # 紫色占位
             pg.draw.rect(self.image, (255, 255, 255), self.image.get_rect(), 3)
+            self.frames = [self.image]
+            
+        self.image = self.frames[0]
         
         # Boss 位置（屏幕右侧）
         boss_x = getattr(settings, 'BOSS_X_POSITION', WIDTH - 150)
@@ -94,18 +127,24 @@ class Boss(pg.sprite.Sprite):
         self.shoot_interval = getattr(settings, 'BOSS_SHOOT_INTERVAL', 120)  # 2秒 (60fps * 2)
         
         # 三个发射位置（A, B, C）的Y坐标
-        # A: 低位（玩家需要滑行）- 在玩家小腿/脚部高度，不滑行会被击中
-        self.position_A_y = GROUND_HEIGHT + getattr(settings, 'PLAYER_GROUND_OFFSET', 33) - 30
-        # B: 中位（玩家站立不动可躲避）- 在玩家头部上方
-        self.position_B_y = GROUND_HEIGHT + getattr(settings, 'PLAYER_GROUND_OFFSET', 33) - PLAYER_HEIGHT - 30
-        # C: 地面高度（玩家需要跳跃）- 在地面高度，站立会被击中
-        self.position_C_y = GROUND_HEIGHT + getattr(settings, 'PLAYER_GROUND_OFFSET', 33) - 20
+        # A: 中位（玩家需要滑行躲避）- 在玩家高度中间，滑行可躲避
+        self.position_A_y = GROUND_HEIGHT + getattr(settings, 'PLAYER_GROUND_OFFSET', 33) - (getattr(settings, 'PLAYER_HEIGHT', 200) // 2)
+        # B: 高位（玩家站立不动可躲避）- 在玩家头部上方，跳跃会被击中
+        self.position_B_y = GROUND_HEIGHT + getattr(settings, 'PLAYER_GROUND_OFFSET', 33) - getattr(settings, 'PLAYER_HEIGHT', 200) - 20
+        # C: 低位（玩家需要跳跃躲避）- 在玩家正前方，站立会被击中
+        self.position_C_y = GROUND_HEIGHT + getattr(settings, 'PLAYER_GROUND_OFFSET', 33) - 60
         
         # 子弹发射X位置（Boss左侧）
         self.bullet_spawn_x = self.rect.left - 10
     
     def update(self) -> None:
         """更新 Boss 状态"""
+        # 动画更新
+        self.frame_index += self.animation_speed
+        if self.frame_index >= len(self.frames):
+            self.frame_index = 0
+        self.image = self.frames[int(self.frame_index)]
+
         # 上下移动
         self.rect.y += self.move_speed * self.move_direction
         

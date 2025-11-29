@@ -15,6 +15,7 @@ from dog import Dog
 from house import House
 from text_target import TextTarget
 from boss import Boss, Bullet
+from resources import load_image
 
 
 class Game:
@@ -23,9 +24,10 @@ class Game:
     def __init__(self) -> None:
         pg.init()
         self.game_active = False
+        self.show_tutorial = False
         self.clock = pg.time.Clock()
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
-        pg.display.set_caption('A Trip Home')
+        pg.display.set_caption('Code Mouse King')
 
         self.flash_counter = 0
         self.current_track = 0
@@ -37,7 +39,7 @@ class Game:
         self.dog_spawn_interval = DOG_SPAWN_FREQ
         settings.CURRENT_MOVING_SPEED = MOVING_SPEED
 
-        self.game_name = TITLE_FONT.render('A Trip Home', False, 'white')
+        self.game_name = TITLE_FONT.render('Code Mouse King', False, 'white')
         self.game_name_rect = self.game_name.get_rect(center=(WIDTH // 2, GAMENAME_HEIGHT))
         self.game_message = TITLE_FONT.render('Press SPACE to play', False, 'white')
         self.game_message_rect = self.game_message.get_rect(
@@ -361,7 +363,10 @@ class Game:
 
         collided_houses = pg.sprite.spritecollide(cat.sprite, house, False)
         for collided_house in collided_houses:
-            if collided_house.rect.centerx <= cat.sprite.rect.centerx:
+            # 修改判定条件：猫必须深入房子内部（超过宽度的 60%）才算通关
+            # 避免刚碰到房子边缘就触发通关
+            threshold_x = collided_house.rect.left + collided_house.rect.width * 0.6
+            if cat.sprite.rect.centerx >= threshold_x:
                 # 播放到达房屋音效并短暂停顿
                 try:
                     self.win_sound.play()
@@ -386,8 +391,12 @@ class Game:
                         # 清空上一关的Boss子弹，避免带入新关卡
                         try:
                             bullets.empty()
+                            boss.empty()
+                            boss_names = ['simon', 'david', 'gio']
+                            boss_name = boss_names[self.current_level_index] if self.current_level_index < len(boss_names) else 'simon'
+                            boss.add(Boss(boss_name))
                         except Exception as e:
-                            print(f"Error clearing bullets: {e}")
+                            print(f"Error clearing bullets or spawning boss: {e}")
                         
                         # 切换背景（如果 background 可用）
                         try:
@@ -581,7 +590,9 @@ class Game:
     def spawn_boss(self) -> None:
         """生成 Boss"""
         if not self.boss_spawned:
-            boss.add(Boss())
+            boss_names = ['simon', 'david', 'gio']
+            boss_name = boss_names[self.current_level_index] if self.current_level_index < len(boss_names) else 'simon'
+            boss.add(Boss(boss_name))
             self.boss_active = True
             self.boss_spawned = True
             # 触发强烈的屏幕震动
@@ -621,7 +632,7 @@ class Game:
         
         # Boss 始终存在 - 自动生成
         try:
-            boss.add(Boss())
+            boss.add(Boss('simon'))
             self.boss_active = True
             self.boss_spawned = True
         except Exception as e:
@@ -982,6 +993,76 @@ class Game:
         else:
             self.screen.blit(score_message, score_message_rect)
 
+    def draw_tutorial_screen(self) -> None:
+        self.screen.fill((30, 30, 40))  # Dark background
+        
+        # Title
+        title = TITLE_FONT.render('HOW TO PLAY', False, 'gold')
+        title_rect = title.get_rect(center=(WIDTH // 2, 80))
+        self.screen.blit(title, title_rect)
+        
+        # Fonts
+        try:
+            info_font = pg.font.Font('assets/font/Purrfect.ttf', 40)
+            desc_font = pg.font.Font('assets/font/Purrfect.ttf', 30)
+        except:
+            info_font = pg.font.SysFont(None, 40)
+            desc_font = pg.font.SysFont(None, 30)
+
+        # Section 1: Controls
+        # Jump
+        jump_text = info_font.render('Type Word -> JUMP', False, 'white')
+        self.screen.blit(jump_text, (200, 200))
+        
+        # Slide
+        slide_text = info_font.render('L-Ctrl -> SLIDE', False, 'white')
+        self.screen.blit(slide_text, (200, 300))
+        
+        # Section 2: Items
+        item_start_y = 450
+        item_x = 200
+        
+        # Health
+        try:
+            heart_img = load_image(HEALTH_ITEM, size=(48, 48), convert_alpha=True)
+            self.screen.blit(heart_img, (item_x, item_start_y))
+        except:
+            pg.draw.rect(self.screen, 'red', (item_x, item_start_y, 48, 48))
+        
+        health_text = desc_font.render('Recover Health', False, 'white')
+        self.screen.blit(health_text, (item_x + 70, item_start_y + 10))
+        
+        # Shield
+        shield_y = item_start_y + 80
+        # Draw shield icon manually as in items.py
+        shield_surf = pg.Surface((48, 48), pg.SRCALPHA)
+        shield_surf.fill((20, 60, 160))
+        pg.draw.circle(shield_surf, (180, 220, 255), (24, 24), 18)
+        pg.draw.circle(shield_surf, (20, 60, 160), (24, 24), 12)
+        self.screen.blit(shield_surf, (item_x, shield_y))
+        
+        shield_text = desc_font.render('Shield (Immune)', False, 'white')
+        self.screen.blit(shield_text, (item_x + 70, shield_y + 10))
+        
+        # Super Jump
+        zap_y = shield_y + 80
+        try:
+            zap_img = load_image(SUPERJUMP_ITEM, size=(48, 48), convert_alpha=True)
+            self.screen.blit(zap_img, (item_x, zap_y))
+        except:
+            pg.draw.rect(self.screen, 'yellow', (item_x, zap_y, 48, 48))
+            
+        zap_text = desc_font.render('Super Jump', False, 'white')
+        self.screen.blit(zap_text, (item_x + 70, zap_y + 10))
+        
+        # Press Space to Start
+        start_msg = info_font.render('Press SPACE to Start', False, 'cyan')
+        start_rect = start_msg.get_rect(center=(WIDTH // 2, HEIGHT - 100))
+        
+        # Blink effect
+        if (pg.time.get_ticks() // 500) % 2 == 0:
+            self.screen.blit(start_msg, start_rect)
+
     def main_loop(self) -> None:
         while True:
             self.clock.tick(FPS)
@@ -1113,7 +1194,13 @@ class Game:
                             text_target.sprite.process_key(event.key)
                 else:
                     if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
-                        self.reset_run_state()
+                        # 只有在非关卡过渡期间，按空格才重置游戏
+                        if not self.show_level_transition:
+                            if self.show_tutorial:
+                                self.show_tutorial = False
+                                self.reset_run_state()
+                            else:
+                                self.show_tutorial = True
 
             text_target.update()
 
@@ -1321,7 +1408,10 @@ class Game:
                             pass
                         self.play_pregame_music()
                 else:
-                    self.draw_home_screen(score)
+                    if self.show_tutorial:
+                        self.draw_tutorial_screen()
+                    else:
+                        self.draw_home_screen(score)
 
             # 如果处于屏幕抖动状态，将已绘制的画面做随机偏移（帧内平移）
             # 注意：这里对 self.screen 做一次复制并偏移后再刷新屏幕，避免改动大量绘制调用。

@@ -19,7 +19,7 @@ PLAYER_GROUND_OFFSET = 33  # 玩家角色脚部到图像底部的偏移（修正
 DOG_WIDTH, DOG_HEIGHT = 162, 141  # 狗狗尺寸
 TREE_WIDTH, TREE_HEIGHT = 264, 333  # 树木尺寸
 HOUSE_WIDTH, HOUSE_HEIGHT = 300, 340  # 房屋尺寸
-HOUSE_GROUND_OFFSET = 20  # 房屋相对地面的偏移
+HOUSE_GROUND_OFFSET = 0  # 房屋相对地面的偏移
 
 # 帧率、重力和移动速度
 FPS = 60
@@ -87,7 +87,7 @@ SUPER_JUMP_NOTICE_FRAMES = FPS
 SUPER_JUMP_EFFECT_FRAMES = FPS // 2
 
 # 滑行技能设置
-SLIDE_DURATION = 30  # 滑行持续时间（帧）
+SLIDE_DURATION = 50  # 滑行持续时间（帧）
 SLIDE_COOLDOWN = 90  # 滑行冷却时间（帧）
 SLIDE_KEY = pg.K_LCTRL  # 滑行按键（左Ctrl）
 

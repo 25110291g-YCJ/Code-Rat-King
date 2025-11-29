@@ -124,8 +124,8 @@ class Background:
             screen.blit(mid['surf'], (int(mid['x']) + WIDTH, mid['y']))
 
     def draw_ground_front(self, screen: pg.Surface) -> None:
-        # Scene 1 和 Scene 3 已经调整了背景高度，不需要前景覆盖，否则会遮挡
-        if getattr(self, 'current_level', '') in ['scene1', 'scene3']:
+        # Scene 1, 2 和 3 已经调整了背景高度，不需要前景覆盖，否则会遮挡
+        if getattr(self, 'current_level', '') in ['scene1', 'scene2', 'scene3']:
             return
 
         # custom 层作为前景（若存在多层）
@@ -210,13 +210,15 @@ class Background:
             target_height = HEIGHT
 
             if name == 'scene1':
-                filenames = ['场景1背景.PNG', '场景1出口.PNG']
+                filenames = ['场景1背景.PNG']
                 # 调整 Scene 1 的高度，使其不覆盖地面区域
                 target_height = GROUND_HEIGHT
             elif name == 'scene2':
-                filenames = ['场景2背景.PNG', '场景2出口.PNG']
+                filenames = ['场景2背景.PNG']
+                # 调整 Scene 2 的高度，使其不覆盖地面区域
+                target_height = GROUND_HEIGHT
             elif name == 'scene3':
-                filenames = ['场景3背景.PNG', '场景3窗户.PNG', '场景3垃圾桶.PNG', '场景3出口.PNG']
+                filenames = ['场景3背景.PNG', '场景3窗户.PNG', '场景3垃圾桶.PNG']
                 # 调整 Scene 3 的高度，使其不覆盖地面区域
                 target_height = GROUND_HEIGHT
             else:
@@ -239,8 +241,8 @@ class Background:
             
             # Set custom ground (使用最后一层作为地面参考)
             try:
-                if name in ['scene1', 'scene3']:
-                    # Scene 1 和 Scene 3 使用纯灰色地面
+                if name in ['scene1', 'scene2', 'scene3']:
+                    # Scene 1, 2 和 3 使用纯灰色地面
                     g_surf = pg.Surface((WIDTH, GROUND_DEPTH))
                     g_surf.fill((100, 100, 100))
                     self.custom_ground = {'surf': g_surf, 'x': 0.0, 'speed': 1.0, 'y': GROUND_HEIGHT}
