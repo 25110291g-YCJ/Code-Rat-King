@@ -426,12 +426,12 @@ class Game:
                         
                         # Increase Difficulty for next level
                         # 1. Increase base moving speed
-                        settings.CURRENT_MOVING_SPEED = min(settings.MAX_MOVING_SPEED, settings.CURRENT_MOVING_SPEED + 1)
+                        # settings.CURRENT_MOVING_SPEED = min(settings.MAX_MOVING_SPEED, settings.CURRENT_MOVING_SPEED + 1)
                         # 2. Increase obstacle speed multiplier
-                        settings.OBSTACLE_SPEED_MULTIPLIER += 0.2
+                        settings.OBSTACLE_SPEED_MULTIPLIER += 0.3
                         # 3. Spawn obstacles more frequently
-                        self.tree_spawn_interval = max(1000, self.tree_spawn_interval - 400)
-                        pg.time.set_timer(self.tree_timer, self.tree_spawn_interval)
+                        # self.tree_spawn_interval = max(1000, self.tree_spawn_interval - 400)
+                        # pg.time.set_timer(self.tree_timer, self.tree_spawn_interval)
                         
                         next_level = self.levels[self.current_level_index]
                         
@@ -713,7 +713,7 @@ class Game:
         self.super_jump_notice_timer = 0
         self.difficulty_stage = -1
         settings.CURRENT_MOVING_SPEED = MOVING_SPEED
-        settings.OBSTACLE_SPEED_MULTIPLIER = 1.6  # Reset obstacle speed multiplier
+        settings.OBSTACLE_SPEED_MULTIPLIER = 2.2  # Reset obstacle speed multiplier
         self.tree_spawn_interval = TREE_SPAWN_FREQ
         self.house_spawn_interval = HOUSE_SPAWN_FREQ
         self.dog_spawn_interval = DOG_SPAWN_FREQ

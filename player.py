@@ -162,8 +162,8 @@ class Player(pg.sprite.Sprite):
     def apply_penalty(self) -> None:
         """触发惩罚状态，短时间内禁止再次跳跃。"""
         self.penalty_timer = PENALTY_LOCK_FRAMES
-        if self.rect.bottom <= GROUND_HEIGHT + self.ground_offset:
-            self.gravity = abs(self.gravity)
+        # if self.rect.bottom <= GROUND_HEIGHT + self.ground_offset:
+        #     self.gravity = abs(self.gravity)
 
     def enable_super_jump(self) -> None:
         """激活超级跳跃奖励。"""

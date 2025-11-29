@@ -122,7 +122,11 @@ class Boss(pg.sprite.Sprite):
         
         # 射击相关
         self.shoot_timer = 0
-        self.shoot_interval = getattr(settings, 'BOSS_SHOOT_INTERVAL', 120)  # 2秒 (60fps * 2)
+        
+        # 根据 Boss 名字获取射击间隔
+        intervals = getattr(settings, 'BOSS_SHOOT_INTERVALS', {})
+        default_interval = getattr(settings, 'BOSS_SHOOT_INTERVAL_DEFAULT', 180)
+        self.shoot_interval = intervals.get(boss_name.lower(), default_interval)
         
         # 三个发射位置（A, B, C）的Y坐标
         # A: 中位（玩家需要滑行躲避）- 在玩家高度中间，滑行可躲避

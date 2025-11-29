@@ -24,7 +24,7 @@ HOUSE_GROUND_OFFSET = 50  # 房屋相对地面的偏移 (Align with player)
 # 帧率、重力和移动速度
 FPS = 60
 # GRAVITY 在此项目中也被用作跳跃的初速度（负值向上），将其加大以提高跳跃高度
-GRAVITY = -24
+GRAVITY = -29
 MOVING_SPEED = 3
 MAX_MOVING_SPEED = 8
 SPEED_INCREMENT = 0.4  # 每个难度阶段增加的速度
@@ -41,19 +41,19 @@ TARGET_ALERT_COLOR = 'salmon'
 SUPER_JUMP_TEXT_COLOR = 'gold'
 
 # 生成频率与延迟时间
-TREE_SPAWN_FREQ = 3000
-TREE_SPAWN_MIN = 1500
+TREE_SPAWN_FREQ = 4500
+TREE_SPAWN_MIN = 2000
 TREE_SPAWN_STEP = 150
 # 房屋默认在约 1 分钟出现（加上 ~4 秒移动距离）
-HOUSE_SPAWN_FREQ = 56000
-HOUSE_SPAWN_MIN = 35000
+HOUSE_SPAWN_FREQ = 60000
+HOUSE_SPAWN_MIN = 40000
 HOUSE_SPAWN_STEP = 5000
 # 固定一次性房屋生成（毫秒）：用于只在开局后固定时刻生成房屋的模式
-HOUSE_FIXED_SPAWN_MS = 10000
+HOUSE_FIXED_SPAWN_MS = 15000
 # 关卡过渡提示持续时长（毫秒）
 LEVEL_TRANSITION_MS = 2000
-DOG_SPAWN_FREQ = 30000
-DOG_SPAWN_MIN = 12000
+DOG_SPAWN_FREQ = 40000
+DOG_SPAWN_MIN = 15000
 DOG_SPAWN_STEP = 1000
 DELAY_TIME = 3000
 EASTEREGG_PROB = 0.06
@@ -81,8 +81,8 @@ COMBO_BONUS = 0.1
 COMBO_MAX_MULTIPLIER = 2.0
 
 # 超级跳跃力：比普通跳更强
-# 让超级跳跃高度略高于普通跳跃（使用 1.2 倍的初速度），并随 GRAVITY 调整。
-SUPER_JUMP_FORCE = int(GRAVITY * 1.2)  # 使用 1.2 倍（例如 GRAVITY=-30 时约为 -36）
+# 让超级跳跃高度略高于普通跳跃（使用 1.25 倍的初速度），并随 GRAVITY 调整。
+SUPER_JUMP_FORCE = int(GRAVITY * 1.25)  # 使用 1.25 倍
 SUPER_JUMP_BONUS = 5
 SUPER_JUMP_NOTICE_FRAMES = FPS
 SUPER_JUMP_EFFECT_FRAMES = FPS // 2
@@ -98,6 +98,15 @@ BOSS_HEIGHT = 200  # Boss 高度
 BOSS_X_POSITION = WIDTH - 150  # Boss X坐标（屏幕右侧）
 BOSS_MOVE_SPEED = 2  # Boss 上下移动速度
 BOSS_MOVE_TOP = 150  # Boss 移动范围上限
+
+# Boss 射击间隔配置（帧数，60帧=1秒）
+# 降低频率：Simon(3s), David(2.5s), Gio(2s)
+BOSS_SHOOT_INTERVALS = {
+    'simon': 180,
+    'david': 150,
+    'gio': 120
+}
+BOSS_SHOOT_INTERVAL_DEFAULT = 180
 BOSS_MOVE_BOTTOM = HEIGHT - 250  # Boss 移动范围下限
 BOSS_SHOOT_INTERVAL = 120  # Boss 射击间隔（帧）= 2秒
 
@@ -186,8 +195,8 @@ PARALLAX_GROUND_SPEEDS = [1.0, 1.4]
 # 前景地面图层不透明度（0-255）——较低值让后方内容隐约可见
 PARALLAX_GROUND_ALPHAS = [255, 200]
 # 障碍物总体速度倍数（>1 增加障碍物移动速度）
-# 已根据请求再次加快一些（由 1.25 -> 1.6）
-OBSTACLE_SPEED_MULTIPLIER = 1.6
+# 已根据请求再次加快一些（由 1.6 -> 2.2）
+OBSTACLE_SPEED_MULTIPLIER = 2.2
 
 # 着陆/地面粒子（跳跃落地尘土）配置
 DUST_PARTICLE_COUNT = 12
