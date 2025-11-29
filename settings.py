@@ -4,7 +4,7 @@ pg.init()
 # 游戏尺寸
 WIDTH, HEIGHT = 1600, 900  # 游戏窗口显示尺寸
 GROUND_DEPTH = 200  # 地面深度
-GROUND_HEIGHT = HEIGHT - GROUND_DEPTH  # 地面高度
+GROUND_HEIGHT = HEIGHT - GROUND_DEPTH  # 地面高    'obstacle_5': 'assets/barrier/new/0_Archer_Running_007-5(1).png',
 
 # 可配置的猫起始 X 坐标（方便把猫放到屏幕偏左的位置）
 # 默认在屏幕中间左移 120 像素
@@ -15,16 +15,16 @@ TEXTTARGET_HEIGHT = GROUND_HEIGHT // 3  # 文本目标显示高度
 SCOREMESSAGE_HEIGHT = HEIGHT//1.25  # 分数信息显示高度
 CAT_WIDTH, CAT_HEIGHT = 162, 141  # 猫咪尺寸（保留兼容性）
 PLAYER_WIDTH, PLAYER_HEIGHT = 162, 200  # 玩家角色尺寸
-PLAYER_GROUND_OFFSET = 33  # 玩家角色脚部到图像底部的偏移（修正悬空问题）
+PLAYER_GROUND_OFFSET = 50  # 玩家角色脚部到图像底部的偏移（修正悬空问题）
 DOG_WIDTH, DOG_HEIGHT = 162, 141  # 狗狗尺寸
-TREE_WIDTH, TREE_HEIGHT = 264, 333  # 树木尺寸
+TREE_WIDTH, TREE_HEIGHT = 250, 250  # 树木尺寸
 HOUSE_WIDTH, HOUSE_HEIGHT = 300, 340  # 房屋尺寸
-HOUSE_GROUND_OFFSET = 0  # 房屋相对地面的偏移
+HOUSE_GROUND_OFFSET = 50  # 房屋相对地面的偏移 (Align with player)
 
 # 帧率、重力和移动速度
 FPS = 60
 # GRAVITY 在此项目中也被用作跳跃的初速度（负值向上），将其加大以提高跳跃高度
-GRAVITY = -30
+GRAVITY = -24
 MOVING_SPEED = 3
 MAX_MOVING_SPEED = 8
 SPEED_INCREMENT = 0.4  # 每个难度阶段增加的速度
@@ -34,7 +34,8 @@ CURRENT_MOVING_SPEED = MOVING_SPEED
 # 字体
 TARGET_FONT = pg.font.Font('assets/font/BubblegumSans.ttf', 150)
 SCORE_FONT = pg.font.Font('assets/font/Purrfect.ttf', 100)
-TITLE_FONT = pg.font.Font('assets/font/KittenSwash.ttf', 100)
+# TITLE_FONT = pg.font.Font('assets/font/KittenSwash.ttf', 100) # 原字体带有水印
+TITLE_FONT = pg.font.Font('assets/font/Purrfect.ttf', 100) # 替换为无水印字体
 TARGET_TEXT_COLOR = 'white'
 TARGET_ALERT_COLOR = 'salmon'
 SUPER_JUMP_TEXT_COLOR = 'gold'
@@ -88,7 +89,7 @@ SUPER_JUMP_EFFECT_FRAMES = FPS // 2
 
 # 滑行技能设置
 SLIDE_DURATION = 50  # 滑行持续时间（帧）
-SLIDE_COOLDOWN = 90  # 滑行冷却时间（帧）
+SLIDE_COOLDOWN = 5 * FPS  # 滑行冷却时间（帧），5秒
 SLIDE_KEY = pg.K_LCTRL  # 滑行按键（左Ctrl）
 
 # Boss 设置
@@ -101,7 +102,7 @@ BOSS_MOVE_BOTTOM = HEIGHT - 250  # Boss 移动范围下限
 BOSS_SHOOT_INTERVAL = 120  # Boss 射击间隔（帧）= 2秒
 
 # 子弹设置
-BULLET_SIZE = 20  # 子弹尺寸
+BULLET_SIZE = 40  # 子弹尺寸
 BULLET_SPEED = 8  # 子弹速度
 
 # 评级系统设置
@@ -144,11 +145,12 @@ DOG_RUN = ['assets/dog/Run1.png', 'assets/dog/Run2.png', 'assets/dog/Run3.png', 
            'assets/dog/Run5.png', 'assets/dog/Run6.png', 'assets/dog/Run7.png', 'assets/dog/Run8.png']
 
 TREE_TYPE = {
-    'common_tree': 'assets\\plants\\common_tree.png',
-    'cypress_tree1': 'assets\\plants\\cypress_tree1.png',
-    'cypress_tree2': 'assets\\plants\\cypress_tree2.png',
-    'grass_tree1': 'assets\\plants\\grass_tree1.png',
-    'grass_tree2': 'assets\\plants\\grass_tree2.png'
+    'obstacle_1': 'assets/barrier/new/0_Archer_Running_007-1.png',
+    'obstacle_2': 'assets/barrier/new/0_Archer_Running_007-2.png',
+    'obstacle_3': 'assets/barrier/new/0_Archer_Running_007-3(1).png',
+    'obstacle_4': 'assets/barrier/new/0_Archer_Running_007-4(1).png',
+    'obstacle_5': 'assets/barrier/new/0_Archer_Running_007-5(1).png',
+    'common_tree': 'assets/barrier/new/0_Archer_Running_007-1.png'
 }
 
 # 音效路径
@@ -172,7 +174,7 @@ PARTICLE_COUNT = 8
 PARTICLE_LIFETIME = FPS // 2
 PARTICLE_COLORS = [(160, 82, 45), (139, 69, 19), (205, 133, 63)]  # 棕色系碎片颜色
 # 树缩放因子（<1 表示更矮更窄），可调整以确保猫能跳过
-TREE_SCALE = 0.65
+TREE_SCALE = 0.9
 # 树最小间距（像素），用于防止两棵树或更多障碍物生成得太靠近
 TREE_MIN_GAP = 320
 # 在尝试寻找合适生成位置时的最大重试次数
@@ -198,17 +200,18 @@ DUST_PARTICLE_SIZE_MAX = 10
 ITEM_SPAWN_FREQ = 5000  # 毫秒，默认每 5 秒尝试生成一次道具
 ITEM_MAX_ACTIVE = 2      # 场上同时存在的道具数量上限
 ITEM_LIFETIME = 8 * FPS  # 帧数计数的生存时间
-ITEM_TYPES = ['health', 'shield']
 
-# 简单权重（频率），值越大越常见
-ITEM_TYPES = ['health', 'shield', 'superjump']
-# 超级跳道具贴图
-SUPERJUMP_ITEM = 'assets/items/zap.png'
-# 血包道具贴图
-HEALTH_ITEM = 'assets/items/heart.png'
-# 简单权重（频率），值越大越常见。
-# 调整为：health 0.50, shield 0.30, superjump 0.20（总计 1.0，便于理解与调试）
-ITEM_RARITY = {'health': 0.50, 'shield': 0.30, 'superjump': 0.20}
+# 道具类型：血包、护盾、超级跳、金币
+ITEM_TYPES = ['health', 'shield', 'superjump', 'coin']
+
+# 各道具贴图（使用 barrier 里的图片）
+SUPERJUMP_ITEM = 'assets/barrier/0_Archer_Running_007-3.png'   # 超级大跳
+SHIELD_ITEM = 'assets/barrier/0_Archer_Running_007-4.png'      # 护盾
+COIN_ITEM = 'assets/barrier/0_Archer_Running_007-5.png'        # 金币
+HEALTH_ITEM = 'assets/barrier/0_Archer_Running_007-6.png'      # 血包
+
+# 道具出现权重（频率），值越大越常见
+ITEM_RARITY = {'health': 0.40, 'shield': 0.25, 'superjump': 0.15, 'coin': 0.20}
 
 # 护盾时长（秒）
 SHIELD_DURATION = 3
@@ -218,7 +221,11 @@ HEALTH_SOUND = 'assets/sound effect/hit.wav'
 SHIELD_SOUND = 'assets/sound effect/Meow.ogg'
 
 # 音乐路径
-PREGAME_MUSIC = 'assets/music/GrayTrip.mp3'
+PREGAME_MUSIC = 'assets/music/bgm/begin.mp3'
+# 场景背景音乐
+SCENE_MUSIC_DEBUG = 'assets/music/bgm/level.mp3'      # 场景1和场景2
+SCENE_MUSIC_BOSS = 'assets/music/bgm/boss.mp3'        # 场景3
+
 INGAME_MUSIC = ['assets/music/HappyTune.mp3',
                 'assets/music/TakeATrip.ogg', 'assets/music/TownTheme.mp3']
 
@@ -229,19 +236,49 @@ WORDBANK = [
     {'en': 'print', 'zh': '打印'}, {'en': 'range', 'zh': '范围'}, {'en': 'input', 'zh': '输入'},
     {'en': 'open', 'zh': '打开'}, {'en': 'string', 'zh': '字符串'}, {'en': 'integer', 'zh': '整数'},
     {'en': 'float', 'zh': '浮点数'}, {'en': 'boolean', 'zh': '布尔值'}, {'en': 'list', 'zh': '列表'},
-    {'en': 'tuple', 'zh': '元组'}, {'en': 'dictionary', 'zh': '字典'}, {'en': 'set', 'zh': '集合'},
-    {'en': 'module', 'zh': '模块'}, {'en': 'package', 'zh': '包'}, {'en': 'library', 'zh': '库'},
-    {'en': 'framework', 'zh': '框架'}, {'en': 'django', 'zh': 'Django框架'}, {'en': 'flask', 'zh': 'Flask框架'},
-    {'en': 'pandas', 'zh': 'Pandas库'}, {'en': 'numpy', 'zh': 'NumPy库'}, {'en': 'variable', 'zh': '变量'},
-    {'en': 'function', 'zh': '函数'}, {'en': 'method', 'zh': '方法'}, {'en': 'object', 'zh': '对象'},
-    {'en': 'attribute', 'zh': '属性'}, {'en': 'argument', 'zh': '实参'}, {'en': 'parameter', 'zh': '形参'},
-    {'en': 'syntax', 'zh': '语法'}, {'en': 'error', 'zh': '错误'}, {'en': 'exception', 'zh': '异常'},
-    {'en': 'debug', 'zh': '调试'}, {'en': 'compile', 'zh': '编译'}, {'en': 'loop', 'zh': '循环'},
-    {'en': 'condition', 'zh': '条件'}, {'en': 'statement', 'zh': '语句'}, {'en': 'expression', 'zh': '表达式'},
-    {'en': 'operator', 'zh': '运算符'}, {'en': 'inheritance', 'zh': '继承'}, {'en': 'polymorphism', 'zh': '多态'},
-    {'en': 'encapsulation', 'zh': '封装'}, {'en': 'abstraction', 'zh': '抽象'}, {'en': 'interface', 'zh': '接口'},
-    {'en': 'instance', 'zh': '实例'}, {'en': 'algorithm', 'zh': '算法'}, {'en': 'database', 'zh': '数据库'},
-    {'en': 'server', 'zh': '服务器'}, {'en': 'client', 'zh': '客户端'}, {'en': 'request', 'zh': '请求'},
-    {'en': 'response', 'zh': '响应'}, {'en': 'api', 'zh': '接口'}, {'en': 'json', 'zh': 'JSON格式'},
-    {'en': 'script', 'zh': '脚本'}, {'en': 'automation', 'zh': '自动化'}, {'en': 'testing', 'zh': '测试'}
+    {'en': 'tuple', 'zh': '元组'}, {'en': 'set', 'zh': '集合'}, {'en': 'module', 'zh': '模块'},
+    {'en': 'package', 'zh': '包'}, {'en': 'library', 'zh': '库'}, {'en': 'django', 'zh': 'Django框架'},
+    {'en': 'flask', 'zh': 'Flask框架'}, {'en': 'pandas', 'zh': 'Pandas库'}, {'en': 'numpy', 'zh': 'NumPy库'},
+    {'en': 'variable', 'zh': '变量'}, {'en': 'function', 'zh': '函数'}, {'en': 'method', 'zh': '方法'},
+    {'en': 'object', 'zh': '对象'}, {'en': 'argument', 'zh': '实参'}, {'en': 'syntax', 'zh': '语法'},
+    {'en': 'error', 'zh': '错误'}, {'en': 'debug', 'zh': '调试'}, {'en': 'compile', 'zh': '编译'},
+    {'en': 'loop', 'zh': '循环'}, {'en': 'operator', 'zh': '运算符'}, {'en': 'instance', 'zh': '实例'},
+    {'en': 'database', 'zh': '数据库'}, {'en': 'server', 'zh': '服务器'}, {'en': 'client', 'zh': '客户端'},
+    {'en': 'request', 'zh': '请求'}, {'en': 'response', 'zh': '响应'}, {'en': 'api', 'zh': '接口'},
+    {'en': 'json', 'zh': 'JSON格式'}, {'en': 'script', 'zh': '脚本'}, {'en': 'testing', 'zh': '测试'},
+    # New words (<= 8 letters)
+    {'en': 'code', 'zh': '代码'}, {'en': 'data', 'zh': '数据'}, {'en': 'file', 'zh': '文件'},
+    {'en': 'path', 'zh': '路径'}, {'en': 'type', 'zh': '类型'}, {'en': 'name', 'zh': '名称'},
+    {'en': 'self', 'zh': '自身'}, {'en': 'init', 'zh': '初始化'}, {'en': 'main', 'zh': '主函数'},
+    {'en': 'true', 'zh': '真'}, {'en': 'false', 'zh': '假'}, {'en': 'none', 'zh': '空'},
+    {'en': 'break', 'zh': '中断'}, {'en': 'pass', 'zh': '跳过'}, {'en': 'else', 'zh': '否则'},
+    {'en': 'while', 'zh': '当...时'}, {'en': 'for', 'zh': '对于'}, {'en': 'try', 'zh': '尝试'},
+    {'en': 'except', 'zh': '除了'}, {'en': 'raise', 'zh': '引发'}, {'en': 'with', 'zh': '使用'},
+    {'en': 'from', 'zh': '从'}, {'en': 'global', 'zh': '全局'}, {'en': 'lambda', 'zh': '匿名函数'},
+    {'en': 'async', 'zh': '异步'}, {'en': 'await', 'zh': '等待'}, {'en': 'map', 'zh': '映射'},
+    {'en': 'filter', 'zh': '过滤'}, {'en': 'slice', 'zh': '切片'}, {'en': 'sort', 'zh': '排序'},
+    {'en': 'len', 'zh': '长度'}, {'en': 'max', 'zh': '最大值'}, {'en': 'min', 'zh': '最小值'},
+    {'en': 'sum', 'zh': '求和'}, {'en': 'zip', 'zh': '打包'}, {'en': 'dict', 'zh': '字典'},
+    {'en': 'int', 'zh': '整型'}, {'en': 'str', 'zh': '字符串'}, {'en': 'bool', 'zh': '布尔'},
+    {'en': 'byte', 'zh': '字节'}, {'en': 'char', 'zh': '字符'}, {'en': 'stack', 'zh': '栈'},
+    {'en': 'queue', 'zh': '队列'}, {'en': 'heap', 'zh': '堆'}, {'en': 'tree', 'zh': '树'},
+    {'en': 'graph', 'zh': '图'}, {'en': 'node', 'zh': '节点'}, {'en': 'root', 'zh': '根'},
+    {'en': 'leaf', 'zh': '叶子'}, {'en': 'hash', 'zh': '哈希'}, {'en': 'index', 'zh': '索引'},
+    {'en': 'key', 'zh': '键'}, {'en': 'value', 'zh': '值'}, {'en': 'item', 'zh': '项'},
+    {'en': 'query', 'zh': '查询'}, {'en': 'logic', 'zh': '逻辑'}, {'en': 'math', 'zh': '数学'},
+    {'en': 'random', 'zh': '随机'}, {'en': 'time', 'zh': '时间'}, {'en': 'date', 'zh': '日期'},
+    {'en': 'sys', 'zh': '系统'}, {'en': 'os', 'zh': '操作系统'}, {'en': 'pip', 'zh': '包管理'},
+    {'en': 'git', 'zh': '版本控制'}, {'en': 'push', 'zh': '推送'}, {'en': 'pull', 'zh': '拉取'},
+    {'en': 'commit', 'zh': '提交'}, {'en': 'merge', 'zh': '合并'}, {'en': 'branch', 'zh': '分支'},
+    {'en': 'clone', 'zh': '克隆'}, {'en': 'status', 'zh': '状态'}, {'en': 'diff', 'zh': '差异'},
+    {'en': 'log', 'zh': '日志'}, {'en': 'tag', 'zh': '标签'}, {'en': 'head', 'zh': '头部'},
+    {'en': 'origin', 'zh': '远程源'}, {'en': 'remote', 'zh': '远程'}, {'en': 'local', 'zh': '本地'},
+    {'en': 'user', 'zh': '用户'}, {'en': 'host', 'zh': '主机'}, {'en': 'port', 'zh': '端口'},
+    {'en': 'url', 'zh': '链接'}, {'en': 'http', 'zh': '超文本'}, {'en': 'html', 'zh': '网页'},
+    {'en': 'css', 'zh': '样式'}, {'en': 'web', 'zh': '网络'}, {'en': 'net', 'zh': '网'},
+    {'en': 'ip', 'zh': 'IP地址'}, {'en': 'bug', 'zh': '漏洞'}, {'en': 'fix', 'zh': '修复'},
+    {'en': 'run', 'zh': '运行'}, {'en': 'build', 'zh': '构建'}, {'en': 'test', 'zh': '测试'},
+    {'en': 'demo', 'zh': '演示'}, {'en': 'view', 'zh': '视图'}, {'en': 'model', 'zh': '模型'},
+    {'en': 'form', 'zh': '表单'}, {'en': 'app', 'zh': '应用'}, {'en': 'bot', 'zh': '机器人'},
+    {'en': 'ai', 'zh': '人工智能'}
 ]

@@ -30,20 +30,18 @@ class Bullet(pg.sprite.Sprite):
         
         # 不同类型子弹使用不同颜色
         if bullet_type == 'A':
-            color = (255, 100, 100)  # 红色 - 低位
+            # color = (255, 100, 100)  # 红色 - 低位
             self.height_range = 'low'
         elif bullet_type == 'B':
-            color = (100, 255, 100)  # 绿色 - 中位
+            # color = (100, 255, 100)  # 绿色 - 中位
             self.height_range = 'mid'
         else:  # C
-            color = (100, 100, 255)  # 蓝色 - 高位
+            # color = (100, 100, 255)  # 蓝色 - 高位
             self.height_range = 'high'
         
         # 创建子弹图像
-        self.image = pg.Surface((bullet_size, bullet_size))
-        self.image.fill(color)
-        # 添加边框使其更明显
-        pg.draw.rect(self.image, (255, 255, 255), self.image.get_rect(), 2)
+        # 使用 barrier.png 替换原有的色块
+        self.image = load_image('assets/barrier/barrier.png', size=(bullet_size, bullet_size))
         
         self.rect = self.image.get_rect(center=(x, y))
         

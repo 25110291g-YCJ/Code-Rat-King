@@ -210,34 +210,168 @@ class Background:
             target_height = HEIGHT
 
             if name == 'scene1':
-                filenames = ['场景1背景.PNG']
-                # 调整 Scene 1 的高度，使其不覆盖地面区域
-                target_height = GROUND_HEIGHT
-            elif name == 'scene2':
-                filenames = ['场景2背景.PNG']
-                # 调整 Scene 2 的高度，使其不覆盖地面区域
-                target_height = GROUND_HEIGHT
-            elif name == 'scene3':
-                filenames = ['场景3背景.PNG', '场景3窗户.PNG', '场景3垃圾桶.PNG']
-                # 调整 Scene 3 的高度，使其不覆盖地面区域
-                target_height = GROUND_HEIGHT
-            else:
-                filenames = []
-            
-            files = [os.path.join(base_path, f) for f in filenames]
-            
-            # Load layers
-            base_speed = 0.12
-            speed_step = 0.12
-            self.custom_layers = []
-            for i, fp in enumerate(files):
+                # Scene 1: 背景 + 固定装饰
                 try:
-                    # 使用动态设置的尺寸加载图片
-                    img = load_image(fp, size=(target_width, target_height), convert_alpha=True)
-                    speed = base_speed + i * speed_step
-                    self.custom_layers.append({'surf': img, 'x': 0.0, 'speed': float(speed)})
+                    # 1. 加载基础背景
+                    bg_path = os.path.join(base_path, '场景1背景.PNG')
+                    bg_surf = load_image(bg_path, size=(target_width, target_height), convert_alpha=True)
+                    
+                    # 2. 加载并合成装饰 (IMG_5503, 5504, 5505)
+                    # 统一放置在背景上方，并保持相同高度
+                    fixed_y = 50
+                    fixed_h = 500  # 调大高度 (250 -> 500)
+                    
+                    decos = [
+                        (os.path.join('assets', 'documation', 'IMG_5503.PNG'), int(target_width * 0.2)),
+                        (os.path.join('assets', 'documation', 'IMG_5504.PNG'), int(target_width * 0.5)),
+                        (os.path.join('assets', 'documation', 'IMG_5505.PNG'), int(target_width * 0.8)),
+                        # 新增装饰
+                        (os.path.join('assets', 'documation', 'IMG_5505.PNG'), int(target_width * 0.1)),
+                        (os.path.join('assets', 'documation', 'IMG_5504.PNG'), int(target_width * 0.3))
+                    ]
+                    
+                    for path, x_pos in decos:
+                        try:
+                            dec_img = load_image(path, convert_alpha=True)
+                            
+                            # 针对 IMG_5503 特殊处理高度（小一点）
+                            current_h = fixed_h
+                            align_bottom = False
+                            
+                            if 'IMG_5503' in path:
+                                current_h = 250  # 其他是 500，这个设为一半
+                            
+                            # 针对 IMG_5505 (终点门) 特殊处理：贴住地面
+                            if 'IMG_5505' in path:
+                                align_bottom = True
+                            
+                            # 统一缩放到固定高度
+                            scale = current_h / dec_img.get_height()
+                            dec_img = pg.transform.scale(dec_img, (int(dec_img.get_width() * scale), current_h))
+                            
+                            rect = dec_img.get_rect()
+                            rect.x = x_pos
+                            
+                            if align_bottom:
+                                rect.bottom = target_height
+                            else:
+                                rect.y = fixed_y
+                                
+                            bg_surf.blit(dec_img, rect)
+                        except Exception:
+                            pass
+                            
+                    self.custom_layers = [{'surf': bg_surf, 'x': 0.0, 'speed': 0.2}]
                 except Exception:
-                    continue
+                    pass
+
+            elif name == 'scene2':
+                # Scene 2: 背景 + 固定装饰 (IMG_5501, IMG_5502)
+                try:
+                    # 1. 加载基础背景
+                    bg_path = os.path.join(base_path, '场景2背景.PNG')
+                    bg_surf = load_image(bg_path, size=(target_width, target_height), convert_alpha=True)
+                    
+                    # 2. 加载并合成装饰 (IMG_5501, IMG_5502)
+                    # 统一放置在背景上方，并保持相同高度
+                    fixed_y = 50
+                    fixed_h = 500
+                    
+                    decos = [
+                        (os.path.join('assets', 'documation', 'IMG_5501.PNG'), int(target_width * 0.2)),
+                        (os.path.join('assets', 'documation', 'IMG_5502.PNG'), int(target_width * 0.6))
+                    ]
+                    
+                    for path, x_pos in decos:
+                        try:
+                            dec_img = load_image(path, convert_alpha=True)
+                            
+                            current_h = fixed_h
+                            align_bottom = False
+                            
+                            # 针对 IMG_5502 特殊处理：调大一点，并贴住地面
+                            if 'IMG_5502' in path:
+                                current_h = 650
+                                align_bottom = True
+                            
+                            # 统一缩放到固定高度
+                            scale = current_h / dec_img.get_height()
+                            dec_img = pg.transform.scale(dec_img, (int(dec_img.get_width() * scale), current_h))
+                            
+                            rect = dec_img.get_rect()
+                            rect.x = x_pos
+                            
+                            if align_bottom:
+                                rect.bottom = target_height
+                            else:
+                                rect.y = fixed_y
+                                
+                            bg_surf.blit(dec_img, rect)
+                        except Exception:
+                            pass
+                            
+                    self.custom_layers = [{'surf': bg_surf, 'x': 0.0, 'speed': 0.2}]
+                except Exception:
+                    pass
+
+            elif name == 'scene3':
+                # Scene 3: 背景 + 窗户/垃圾桶 + 固定装饰
+                try:
+                    # 1. 加载基础背景
+                    bg_path = os.path.join(base_path, '场景3背景.PNG')
+                    bg_surf = load_image(bg_path, size=(target_width, target_height), convert_alpha=True)
+                    
+                    # 2. 叠加原有的窗户和垃圾桶 (假设它们是全屏图层)
+                    overlays = ['场景3窗户.PNG', '场景3垃圾桶.PNG']
+                    for ov in overlays:
+                        try:
+                            ov_img = load_image(os.path.join(base_path, ov), size=(target_width, target_height), convert_alpha=True)
+                            bg_surf.blit(ov_img, (0, 0))
+                        except Exception:
+                            pass
+                            
+                    # 3. 加载并合成新装饰 (IMG_5506, 5507, 5508)
+                    # 统一放置在背景上方，并保持相同高度
+                    fixed_y = 50
+                    fixed_h = 500  # 调大高度 (250 -> 500)
+
+                    decos = [
+                        (os.path.join('assets', 'documation', 'IMG_5506.PNG'), int(target_width * 0.15)),
+                        (os.path.join('assets', 'documation', 'IMG_5507.PNG'), int(target_width * 0.45)),
+                        (os.path.join('assets', 'documation', 'IMG_5508.PNG'), int(target_width * 0.75)),
+                        # 新增装饰
+                        (os.path.join('assets', 'documation', 'IMG_5508.PNG'), int(target_width * 0.05)),
+                        (os.path.join('assets', 'documation', 'IMG_5506.PNG'), int(target_width * 0.9))
+                    ]
+                    
+                    for path, x_pos in decos:
+                        try:
+                            dec_img = load_image(path, convert_alpha=True)
+                            # 统一缩放到固定高度
+                            scale = fixed_h / dec_img.get_height()
+                            dec_img = pg.transform.scale(dec_img, (int(dec_img.get_width() * scale), fixed_h))
+                            
+                            rect = dec_img.get_rect()
+                            rect.x = x_pos
+                            rect.y = fixed_y
+                            bg_surf.blit(dec_img, rect)
+                        except Exception:
+                            pass
+                            
+                    self.custom_layers = [{'surf': bg_surf, 'x': 0.0, 'speed': 0.2}]
+                except Exception:
+                    pass
+            else:
+                files = []
+            
+            # files = [os.path.join(base_path, f) for f in filenames] # 已在上方构建完整路径
+            
+            # Load layers (仅对非 Scene 1/3 的情况，或者 Scene 2 使用)
+            if name not in ['scene1', 'scene3']:
+                # ...existing logic for scene 2 or others...
+                pass
+            
+            # Set custom ground (使用最后一层作为地面参考)
             
             # Set custom ground (使用最后一层作为地面参考)
             try:

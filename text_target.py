@@ -18,21 +18,24 @@ class TextTarget(pg.sprite.Sprite):
         
         # New state variables for better rendering
         self.full_text = ''
-        self.zh_text = ''
         self.typed_index = 0
         
         self.hit_sound = pg.mixer.Sound(HIT_SOUND)
+
+        # Initialize fonts once
+        self.font = TARGET_FONT
+        
+        # Dirty flag to control rendering
+        self.dirty = False
+
         self.pick_new_word()
 
-    def update_text(self) -> None:
-        # Fonts
-        font = TARGET_FONT
-        try:
-            # Try to use Microsoft YaHei for Chinese support on Windows
-            zh_font = pg.font.SysFont("microsoftyahei", 40)
-        except:
-            zh_font = pg.font.SysFont(None, 40)
+    def _cache_static_surfaces(self) -> None:
+        """Cache static surfaces that don't change during typing."""
+        # Cache English shadow (full word)
+        self.cached_en_shadow = self.font.render(self.full_text, False, (0, 0, 0))
 
+    def update_text(self) -> None:
         # Render parts
         typed_part = self.full_text[:self.typed_index]
         untyped_part = self.full_text[self.typed_index:]
@@ -40,28 +43,17 @@ class TextTarget(pg.sprite.Sprite):
         # Colors
         typed_color = (255, 215, 0) # Gold for typed part
         untyped_color = self.feedback_color
-        shadow_color = (0, 0, 0)
         
         # Render surfaces
-        typed_surf = font.render(typed_part, False, typed_color)
-        untyped_surf = font.render(untyped_part, False, untyped_color)
+        typed_surf = self.font.render(typed_part, False, typed_color)
+        untyped_surf = self.font.render(untyped_part, False, untyped_color)
         
         # Calculate total width for English text
         en_width = typed_surf.get_width() + untyped_surf.get_width()
         en_height = max(typed_surf.get_height(), untyped_surf.get_height())
         
-        # Render Chinese
-        if self.zh_text:
-            zh_surf = zh_font.render(self.zh_text, True, (240, 240, 240))
-            # Add shadow for Chinese text too
-            zh_shadow_surf = zh_font.render(self.zh_text, True, (0, 0, 0))
-            
-            total_width = max(en_width, zh_surf.get_width()) + 20
-            total_height = en_height + zh_surf.get_height() + 15
-        else:
-            zh_surf = None
-            total_width = en_width + 20
-            total_height = en_height + 10
+        total_width = en_width + 20
+        total_height = en_height + 10
             
         # Create main surface
         self.image = pg.Surface((total_width, total_height), pg.SRCALPHA)
@@ -70,20 +62,16 @@ class TextTarget(pg.sprite.Sprite):
         en_x = (total_width - en_width) // 2
         
         # Draw Shadow for English text (offset 4, 4)
-        full_word_shadow = font.render(self.full_text, False, shadow_color)
-        self.image.blit(full_word_shadow, (en_x + 4, 4))
+        if hasattr(self, 'cached_en_shadow'):
+            self.image.blit(self.cached_en_shadow, (en_x + 4, 4))
+        else:
+            # Fallback if not cached yet
+            shadow = self.font.render(self.full_text, False, (0, 0, 0))
+            self.image.blit(shadow, (en_x + 4, 4))
         
         # Draw Typed and Untyped
         self.image.blit(typed_surf, (en_x, 0))
         self.image.blit(untyped_surf, (en_x + typed_surf.get_width(), 0))
-        
-        # Draw Chinese centered below
-        if zh_surf:
-            zh_x = (total_width - zh_surf.get_width()) // 2
-            # Draw Chinese shadow
-            self.image.blit(zh_shadow_surf, (zh_x + 2, en_height + 7))
-            # Draw Chinese text
-            self.image.blit(zh_surf, (zh_x, en_height + 5))
             
         self.rect = self.image.get_rect(center=(WIDTH // 2, TEXTTARGET_HEIGHT))
 
@@ -108,13 +96,14 @@ class TextTarget(pg.sprite.Sprite):
         
         if isinstance(choice_item, dict):
             self.full_text = choice_item['en']
-            self.zh_text = choice_item['zh']
         else:
             self.full_text = choice_item
-            self.zh_text = ""
             
         self.typed_index = 0
         self.candidate = self.full_text # Keep for compatibility if needed, but logic uses full_text
+        
+        # Pre-render static parts
+        self._cache_static_surfaces()
         self.update_text()
 
     def set_word_length_range(self, min_len: int, max_len: int) -> None:
@@ -124,23 +113,43 @@ class TextTarget(pg.sprite.Sprite):
             min(min_len, WORD_LENGTH_CAP), min(max_len, WORD_LENGTH_CAP)
         )
 
-    def process_key(self, key: int) -> None:
+    def process_event(self, event: pg.event.Event) -> None:
+        """Process a keyboard event directly."""
         if not self.full_text:
             return
-        key_name = pg.key.name(key)
-        if len(key_name) != 1 or not key_name.isalpha():
+            
+        # Use event.unicode if available (most reliable for typing)
+        char = getattr(event, 'unicode', '')
+        
+        # If unicode is empty (e.g. special keys), fallback to key name
+        if not char:
+            try:
+                char = pg.key.name(event.key)
+            except:
+                return
+        
+        # Filter: must be a single character and must be a letter (or space if needed)
+        if len(char) != 1:
             return
-        pressed = key_name.lower()
+            
+        if not char.isalpha():
+            return
+            
+        pressed = char.lower()
         
         # Check if we are done
         if self.typed_index >= len(self.full_text):
             return
 
-        target = self.full_text[self.typed_index]
+        target = self.full_text[self.typed_index].lower()
         if pressed == target:
             self._handle_correct_letter()
         else:
             self._handle_miss()
+
+    def process_key(self, key: int) -> None:
+        # Deprecated, use process_event instead
+        pass
 
     def _handle_correct_letter(self) -> None:
         self.typed_index += 1
@@ -156,7 +165,7 @@ class TextTarget(pg.sprite.Sprite):
         self.feedback_color = TARGET_TEXT_COLOR
         self.feedback_timer = 0
         self.hit_sound.play()
-        self.update_text()
+        self.dirty = True
         
         # Check completion
         if self.typed_index >= len(self.full_text):
@@ -168,7 +177,7 @@ class TextTarget(pg.sprite.Sprite):
         self.combo_count = 0
         self.feedback_color = TARGET_ALERT_COLOR
         self.feedback_timer = MISS_FEEDBACK_FRAMES
-        self.update_text()
+        self.dirty = True
         pg.event.post(pg.event.Event(WRONG_TYPING))
 
     def _check_combo_reward(self) -> None:
@@ -199,4 +208,8 @@ class TextTarget(pg.sprite.Sprite):
             self.feedback_timer -= 1
             if self.feedback_timer == 0:
                 self.feedback_color = TARGET_TEXT_COLOR
-                self.update_text()
+                self.dirty = True
+        
+        if self.dirty:
+            self.update_text()
+            self.dirty = False
