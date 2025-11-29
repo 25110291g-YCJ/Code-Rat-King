@@ -463,32 +463,53 @@ class HUD:
         # 通过 Game 暴露的 cat_group 读取猫咪状态（避免跨模块全局依赖）
         cat_group = getattr(self.game, 'cat_group', None)
         cat_sprite = getattr(cat_group, 'sprite', None) if cat_group is not None else None
-        show_notice = ((cat_sprite and getattr(cat_sprite, 'super_jump_ready', False)) or self.game.super_jump_notice_timer > 0)
-        # 缓动 alpha：若 alpha 非显著（接近 0）可略过绘制
-        if not show_notice and self.super_badge_alpha <= 0.01:
-            return
+        
+        # 常驻显示，状态由 super_jump_ready 决定
+        is_ready = (cat_sprite and getattr(cat_sprite, 'super_jump_ready', False))
+        
         x, y = HEALTH_BAR_POS
         badge_w, badge_h = 160, 34
+        # Move Super Jump badge back to below health bar, but aligned to the left
         badge_x = x
         badge_y = y + HEALTH_BAR_HEIGHT + 8
+        
         try:
             badge = pg.Surface((badge_w, badge_h), pg.SRCALPHA)
-            # 将 alpha 合成到整体 surface
-            base_color = (20, 20, 20, int(180 * max(0.0, min(1.0, self.super_badge_alpha))))
-            badge.fill(base_color)
-            pg.draw.rect(badge, SUPER_JUMP_TEXT_COLOR, badge.get_rect(), 2)
-            text_surf = self.hud_small_font.render('SUPER JUMP', False, 'white')
-            txt_rect = text_surf.get_rect(center=(badge_w // 2, badge_h // 2))
+            
+            if is_ready:
+                # 就绪状态：金色
+                badge.fill((180, 140, 20, 180))
+                pg.draw.rect(badge, (255, 255, 100), badge.get_rect(), 2)
+                text_surf = self.hud_small_font.render('SUPER JUMP READY', False, 'white')
+            else:
+                # 充能状态：灰色
+                badge.fill((60, 60, 60, 180))
+                pg.draw.rect(badge, (150, 150, 150), badge.get_rect(), 2)
+                
+                # 计算进度
+                jumps = getattr(cat_sprite, 'jumps_since_charge', 0) if cat_sprite else 0
+                jumps = min(jumps, 3)
+                progress = jumps / 3.0
+                
+                text_surf = self.hud_small_font.render(f'CHARGE {jumps}/3', False, 'lightgray')
+                
+                # 绘制进度条
+                bar_w = int((badge_w - 8) * progress)
+                if bar_w > 0:
+                    bar_rect = pg.Rect(4, badge_h - 6, bar_w, 2)
+                    pg.draw.rect(badge, (255, 200, 50), bar_rect)
+            
+            txt_rect = text_surf.get_rect(center=(badge_w // 2, badge_h // 2 - 2))
             badge.blit(text_surf, txt_rect)
+            
             # 最终 blit
             try:
                 self.game.screen.blit(badge, (badge_x, badge_y))
             except Exception:
                 pass
         except Exception:
-            notice = self.hud_small_font.render('SUPER JUMP', False, SUPER_JUMP_TEXT_COLOR)
-            notice_rect = notice.get_rect(left=x, top=y + HEALTH_BAR_HEIGHT + 8)
-            self.game.screen.blit(notice, notice_rect)
+            pass
+            
         if self.game.super_jump_notice_timer > 0:
             self.game.super_jump_notice_timer -= 1
 
@@ -500,7 +521,11 @@ class HUD:
         if getattr(self.game, 'shield_active', False) and getattr(self.game, 'shield_timer', 0) > 0 or self.shield_badge_alpha > 0.01:
             try:
                 badge_w, badge_h = 100, 28
-                badge_x = x + HEALTH_BAR_WIDTH - badge_w
+                # Move Shield badge to below Super Jump badge
+                # Super Jump is at y + HEALTH_BAR_HEIGHT + 8 with height 34. Add 5px gap.
+                shield_y = y + HEALTH_BAR_HEIGHT + 8 + 34 + 5
+                badge_x = x 
+                
                 badge = pg.Surface((badge_w, badge_h), pg.SRCALPHA)
                 base_color = (10, 60, 140, int(180 * max(0.0, min(1.0, self.shield_badge_alpha))))
                 badge.fill(base_color)
@@ -509,13 +534,14 @@ class HUD:
                 txt = self.hud_small_font.render(f'SHIELD {secs}s', False, 'white')
                 badge.blit(txt, txt.get_rect(center=(badge_w // 2, badge_h // 2)))
                 try:
-                    self.game.screen.blit(badge, (badge_x, badge_y))
+                    self.game.screen.blit(badge, (badge_x, shield_y))
                 except Exception:
                     pass
             except Exception:
                 try:
+                    shield_y = y + HEALTH_BAR_HEIGHT + 8 + 34 + 5
                     txt = self.hud_small_font.render(f'SHIELD {self.game.shield_timer//FPS}s', False, 'white')
-                    self.game.screen.blit(txt, (x + HEALTH_BAR_WIDTH - 120, badge_y))
+                    self.game.screen.blit(txt, (x, shield_y))
                 except Exception:
                     pass
         
@@ -527,35 +553,38 @@ class HUD:
                 cooldown = cat_sprite.slide_cooldown
                 max_cooldown = getattr(settings, 'SLIDE_COOLDOWN', 90)
                 
-                # 只在冷却中或滑行中显示
-                if cooldown > 0 or getattr(cat_sprite, 'is_sliding', False):
-                    badge_w, badge_h = 120, 28
-                    badge_x = x + HEALTH_BAR_WIDTH - badge_w - 110  # 在护盾左侧
+                # 常驻显示 Slide 状态
+                badge_w, badge_h = 140, 34  # Increased size from 120, 28
+                # Align Slide badge to the right of Super Jump badge (160px width + 10px gap)
+                badge_x = x + 170
+                
+                badge = pg.Surface((badge_w, badge_h), pg.SRCALPHA)
+                
+                if getattr(cat_sprite, 'is_sliding', False):
+                    # 滑行中：绿色提示
+                    badge.fill((20, 140, 60, 180))
+                    pg.draw.rect(badge, (180, 255, 180), badge.get_rect(), 2)
+                    txt = self.hud_small_font.render('SLIDING', False, 'white')
+                elif cooldown > 0:
+                    # 冷却中：显示倒计时
+                    badge.fill((60, 60, 60, 180))
+                    pg.draw.rect(badge, (150, 150, 150), badge.get_rect(), 2)
+                    secs = cooldown / FPS
+                    txt = self.hud_small_font.render(f'{secs:.1f}s', False, 'lightgray')
                     
-                    badge = pg.Surface((badge_w, badge_h), pg.SRCALPHA)
-                    
-                    if getattr(cat_sprite, 'is_sliding', False):
-                        # 滑行中：绿色提示
-                        badge.fill((20, 140, 60, 180))
-                        pg.draw.rect(badge, (180, 255, 180), badge.get_rect(), 2)
-                        txt = self.hud_small_font.render('SLIDING', False, 'white')
-                    elif cooldown > 0:
-                        # 冷却中：显示倒计时
-                        badge.fill((60, 60, 60, 180))
-                        pg.draw.rect(badge, (150, 150, 150), badge.get_rect(), 2)
-                        secs = cooldown / FPS
-                        txt = self.hud_small_font.render(f'SLIDE {secs:.1f}s', False, 'lightgray')
-                        
-                        # 绘制冷却进度条
-                        progress = 1.0 - (cooldown / max_cooldown)
-                        bar_w = int((badge_w - 8) * progress)
-                        bar_rect = pg.Rect(4, badge_h - 6, bar_w, 2)
-                        pg.draw.rect(badge, (100, 200, 255), bar_rect)
-                    else:
-                        return
-                    
-                    badge.blit(txt, txt.get_rect(center=(badge_w // 2, badge_h // 2 - 2)))
-                    self.game.screen.blit(badge, (badge_x, badge_y))
+                    # 绘制冷却进度条
+                    progress = 1.0 - (cooldown / max_cooldown)
+                    bar_w = int((badge_w - 8) * progress)
+                    bar_rect = pg.Rect(4, badge_h - 6, bar_w, 2)
+                    pg.draw.rect(badge, (100, 200, 255), bar_rect)
+                else:
+                    # 可用状态：蓝色提示
+                    badge.fill((20, 60, 140, 180))
+                    pg.draw.rect(badge, (100, 200, 255), badge.get_rect(), 2)
+                    txt = self.hud_small_font.render('SLIDE READY', False, 'white')
+                
+                badge.blit(txt, txt.get_rect(center=(badge_w // 2, badge_h // 2 - 2)))
+                self.game.screen.blit(badge, (badge_x, badge_y))
         except Exception:
             pass
 
