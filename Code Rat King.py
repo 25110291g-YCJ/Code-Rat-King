@@ -11,7 +11,6 @@ from trees import Trees
 from particles import Particle, DustParticle
 from items import GroundItem
 from background import Background
-from dog import Dog
 from house import House
 from text_target import TextTarget
 from boss import Boss, Bullet
@@ -38,12 +37,10 @@ class Game:
 
         self.flash_counter = 0
         self.current_track = 0
-        self.cat_dog_collision = False
         self.penalty_flash_timer = 0
         self.super_jump_notice_timer = 0
         self.difficulty_stage = -1
         self.tree_spawn_interval = TREE_SPAWN_FREQ
-        self.dog_spawn_interval = DOG_SPAWN_FREQ
         settings.CURRENT_MOVING_SPEED = MOVING_SPEED
 
         self.game_name = TITLE_FONT.render('Code Rat King', False, 'white')
@@ -76,11 +73,10 @@ class Game:
         pg.mixer.music.set_volume(0.5)
         self.play_pregame_music()
 
-        self.bark_sound = pg.mixer.Sound(BARK_SOUND)
         self.win_sound = pg.mixer.Sound(WIN_SOUND)
         # 猫受击音效（与打字命中音效分开）
         try:
-            self.cat_hit_sound = pg.mixer.Sound(HIT_SOUND)
+            self.cat_hit_sound = pg.mixer.Sound(PLAYER_HURT_SOUND)
         except Exception:
             self.cat_hit_sound = None
 
@@ -112,7 +108,6 @@ class Game:
             self.item_timer = None
 
         self.tree_timer = TREE_SPAWN
-        self.dog_timer = DOG_SPAWN
         # 单次房屋生成：记录时间戳与已生成标志
         self.house_spawn_time_ms = None
         self.house_spawned = False
@@ -121,7 +116,6 @@ class Game:
         self.shield_timer = 0
 
         pg.time.set_timer(self.tree_timer, TREE_SPAWN_FREQ)
-        pg.time.set_timer(self.dog_timer, DOG_SPAWN_FREQ)
         self._init_groups()
         # 将全局组引用回写到实例，便于 HUD/其他模块访问（避免循环导入）
         # 暴露 text_target 以便 HUD 或其他系统读取当前分数/连击信息
@@ -129,7 +123,6 @@ class Game:
         self.cat_group = cat
         self.trees_group = trees
         self.house_group = house
-        self.dog_group = dog
         self.boss_group = boss
         self.bullets_group = bullets
         
@@ -213,14 +206,13 @@ class Game:
                     pass
 
     def _init_groups(self) -> None:
-        global text_target, cat, trees, house, dog, boss, bullets
+        global text_target, cat, trees, house, boss, bullets
         text_target = pg.sprite.GroupSingle()
         text_target.add(TextTarget())
         cat = pg.sprite.GroupSingle()
         cat.add(Player())  # 使用新的Player类
         trees = pg.sprite.Group()
         house = pg.sprite.GroupSingle()
-        dog = pg.sprite.Group()
         # 粒子组在这里也要存在为更新/绘制准备
         self.particles = pg.sprite.Group()
         # 道具组
@@ -289,13 +281,6 @@ class Game:
     def collision(self) -> bool:
         if not cat.sprite:
             return True
-
-        if pg.sprite.spritecollide(cat.sprite, dog, False):
-            if not self.cat_dog_collision:
-                self.bark_sound.play()
-                self.cat_dog_collision = True
-        else:
-            self.cat_dog_collision = False
 
         # 检测与树的碰撞：使用较小的碰撞箱比例以减少误碰
         # collide_rect_ratio 返回一个可作为 collided 回调的函数
@@ -391,7 +376,6 @@ class Game:
                         # 清理场景
                         trees.empty()
                         house.empty()
-                        dog.empty()
                         try:
                             self.items.empty()
                         except Exception:
@@ -413,7 +397,6 @@ class Game:
                 # 清理当前场景的实体
                 trees.empty()
                 house.empty()
-                dog.empty()
                 try:
                     self.items.empty()
                 except Exception:
@@ -576,7 +559,6 @@ class Game:
                                     pg.mixer.music.stop()
                                     trees.empty()
                                     house.empty()
-                                    dog.empty()
                                     boss.empty()
                                     bullets.empty()
                                     return False
@@ -716,14 +698,12 @@ class Game:
         settings.OBSTACLE_SPEED_MULTIPLIER = 2.2  # Reset obstacle speed multiplier
         self.tree_spawn_interval = TREE_SPAWN_FREQ
         self.house_spawn_interval = HOUSE_SPAWN_FREQ
-        self.dog_spawn_interval = DOG_SPAWN_FREQ
         
         # Reset timers
         pg.time.set_timer(self.tree_timer, self.tree_spawn_interval)
 
         trees.empty()
         house.empty()
-        dog.empty()
         try:
             self.items.empty()
         except Exception:
@@ -814,7 +794,6 @@ class Game:
             pass
 
         pg.time.set_timer(self.tree_timer, TREE_SPAWN_FREQ)
-        pg.time.set_timer(self.dog_timer, DOG_SPAWN_FREQ)
         # 记录一次性房屋生成时间（相对于当前 ticks）
         try:
             delay_ms = int(getattr(settings, 'HOUSE_FIXED_SPAWN_MS', 60000))
@@ -865,7 +844,6 @@ class Game:
 
         _update_timer('tree_spawn_interval', self.tree_timer, TREE_SPAWN_FREQ, TREE_SPAWN_MIN, TREE_SPAWN_STEP)
     # house spawn is managed as a one-time event (HOUSE_FIXED_SPAWN_MS); skip timer updates here
-        _update_timer('dog_spawn_interval', self.dog_timer, DOG_SPAWN_FREQ, DOG_SPAWN_MIN, DOG_SPAWN_STEP)
 
         min_len = min(WORD_LENGTH_CAP, WORD_BASE_MIN_LENGTH + stage)
         max_len = min(WORD_LENGTH_CAP, WORD_BASE_MAX_LENGTH + stage * 2)
@@ -1277,8 +1255,16 @@ class Game:
         self.screen.blit(bullet_header, (obs_x, bullet_y))
         
         try:
-            bullet_img = load_image('assets/barrier/barrier.png', size=(60, 60), convert_alpha=True)
-            self.screen.blit(bullet_img, (obs_x + 40, bullet_y + 50))
+            # 展示三种子弹 A, B, C
+            b_images = getattr(settings, 'BULLET_IMAGES', {})
+            types = ['A', 'B', 'C']
+            # 调整起始位置，让三个子弹居中一些
+            start_x = obs_x - 10
+            for i, t in enumerate(types):
+                path = b_images.get(t, 'assets/barrier/barrier.png')
+                # 稍微缩小一点以便放下三个
+                img = load_image(path, size=(50, 50), convert_alpha=True)
+                self.screen.blit(img, (start_x + i * 60, bullet_y + 50))
         except:
             pg.draw.circle(self.screen, 'red', (obs_x + 70, bullet_y + 80), 30)
             
@@ -1374,7 +1360,6 @@ class Game:
                             pg.mixer.music.stop()
                             trees.empty()
                             house.empty()
-                            dog.empty()
                 elif event.type == SUPER_JUMP_READY and cat.sprite:
                     cat.sprite.enable_super_jump()
                     self.super_jump_notice_timer = SUPER_JUMP_NOTICE_FRAMES
@@ -1455,8 +1440,6 @@ class Game:
                         except Exception:
                             spawn_x = randint(WIDTH, WIDTH * 2)
                         self.items.add(GroundItem(chosen, spawn_x))
-                    elif event.type == self.dog_timer and random() <= EASTEREGG_PROB:
-                        dog.add(Dog())
                     elif event.type == pg.KEYDOWN:
                         # 处理滑行按键
                         if event.key == getattr(settings, 'SLIDE_KEY', pg.K_DOWN) and cat.sprite:
@@ -1498,7 +1481,6 @@ class Game:
             if self.game_active:
                 trees.update()
                 house.update()
-                dog.update()
                 self.particles.update()
                 self.items.update()
                 cat.update()
@@ -1574,7 +1556,6 @@ class Game:
                 # 在树绘制后绘制粒子，让粒子浮于树之上/附近
                 self.particles.draw(self.screen)
                 house.draw(self.screen)
-                dog.draw(self.screen)
                 
                 # 绘制 Boss 和子弹
                 if self.boss_active:
@@ -1649,7 +1630,6 @@ class Game:
                         self.show_victory = False
                         trees.empty()
                         house.empty()
-                        dog.empty()
                         try:
                             self.damage_popups.clear()
                         except Exception:
@@ -1692,7 +1672,6 @@ class Game:
                         self.show_game_over = False
                         trees.empty()
                         house.empty()
-                        dog.empty()
                         try:
                             self.damage_popups.clear()
                         except Exception:

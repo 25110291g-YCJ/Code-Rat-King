@@ -3,7 +3,7 @@ pg.init()
 
 # 游戏尺寸
 WIDTH, HEIGHT = 1600, 900  # 游戏窗口显示尺寸
-GROUND_DEPTH = 200  # 地面深度
+GROUND_DEPTH = 100  # 地面深度 (调低地面高度，原为200)
 GROUND_HEIGHT = HEIGHT - GROUND_DEPTH  # 地面高    'obstacle_5': 'assets/barrier/new/0_Archer_Running_007-5(1).png',
 
 # 可配置的猫起始 X 坐标（方便把猫放到屏幕偏左的位置）
@@ -16,7 +16,6 @@ SCOREMESSAGE_HEIGHT = HEIGHT//1.25  # 分数信息显示高度
 CAT_WIDTH, CAT_HEIGHT = 162, 141  # 猫咪尺寸（保留兼容性）
 PLAYER_WIDTH, PLAYER_HEIGHT = 162, 200  # 玩家角色尺寸
 PLAYER_GROUND_OFFSET = 50  # 玩家角色脚部到图像底部的偏移（修正悬空问题）
-DOG_WIDTH, DOG_HEIGHT = 162, 141  # 狗狗尺寸
 TREE_WIDTH, TREE_HEIGHT = 250, 250  # 树木尺寸
 HOUSE_WIDTH, HOUSE_HEIGHT = 300, 340  # 房屋尺寸
 HOUSE_GROUND_OFFSET = 50  # 房屋相对地面的偏移 (Align with player)
@@ -52,9 +51,6 @@ HOUSE_SPAWN_STEP = 5000
 HOUSE_FIXED_SPAWN_MS = 15000
 # 关卡过渡提示持续时长（毫秒）
 LEVEL_TRANSITION_MS = 2000
-DOG_SPAWN_FREQ = 40000
-DOG_SPAWN_MIN = 15000
-DOG_SPAWN_STEP = 1000
 DELAY_TIME = 3000
 EASTEREGG_PROB = 0.06
 
@@ -62,7 +58,6 @@ EASTEREGG_PROB = 0.06
 CORRECT_TYPING = pg.USEREVENT + 1
 TREE_SPAWN = pg.USEREVENT + 2
 HOUSE_SPAWN = pg.USEREVENT + 3
-DOG_SPAWN = pg.USEREVENT + 4
 NEXT_MUSIC = pg.USEREVENT + 5
 WRONG_TYPING = pg.USEREVENT + 6
 SUPER_JUMP_READY = pg.USEREVENT + 7
@@ -107,12 +102,17 @@ BOSS_SHOOT_INTERVALS = {
     'gio': 120
 }
 BOSS_SHOOT_INTERVAL_DEFAULT = 180
-BOSS_MOVE_BOTTOM = HEIGHT - 250  # Boss 移动范围下限
+BOSS_MOVE_BOTTOM = GROUND_HEIGHT - 50  # Boss 移动范围下限 (随地面高度调整)
 BOSS_SHOOT_INTERVAL = 120  # Boss 射击间隔（帧）= 2秒
 
 # 子弹设置
 BULLET_SIZE = 40  # 子弹尺寸
 BULLET_SPEED = 8  # 子弹速度
+BULLET_IMAGES = {
+    'A': 'assets/barrier/projectile/png.png',
+    'B': 'assets/barrier/projectile/png1.png',
+    'C': 'assets/barrier/projectile/png2.png'
+}
 
 # 评级系统设置
 # 评级等级和对应的分数阈值（更鲜艳醒目的颜色）
@@ -150,9 +150,6 @@ CAT_WALK = ['assets/cat/Walk1.png', 'assets/cat/Walk2.png', 'assets/cat/Walk3.pn
 CAT_JUMP = ['assets/cat/Jump1.png', 'assets/cat/Jump2.png', 'assets/cat/Jump3.png', 'assets/cat/Jump4.png',
             'assets/cat/Jump5.png', 'assets/cat/Jump6.png', 'assets/cat/Jump7.png', 'assets/cat/Jump8.png']
 
-DOG_RUN = ['assets/dog/Run1.png', 'assets/dog/Run2.png', 'assets/dog/Run3.png', 'assets/dog/Run4.png',
-           'assets/dog/Run5.png', 'assets/dog/Run6.png', 'assets/dog/Run7.png', 'assets/dog/Run8.png']
-
 TREE_TYPE = {
     'obstacle_1': 'assets/barrier/new/0_Archer_Running_007-1.png',
     'obstacle_2': 'assets/barrier/new/0_Archer_Running_007-2.png',
@@ -163,10 +160,10 @@ TREE_TYPE = {
 }
 
 # 音效路径
-JUMP_SOUND = 'assets/sound effect/Meow.ogg'
+JUMP_SOUND = 'assets/music/jump.mp3'
 HIT_SOUND = 'assets/sound effect/hit.wav'
+PLAYER_HURT_SOUND = 'assets/music/hurt.mp3'
 WIN_SOUND = 'assets/sound effect/win.ogg'
-BARK_SOUND = 'assets/sound effect/dog_barking.wav'
 
 # 失败（Game Over）配置
 GAME_OVER_DURATION = 2000  # 毫秒，Game Over 屏保持时长
@@ -226,8 +223,11 @@ ITEM_RARITY = {'health': 0.40, 'shield': 0.25, 'superjump': 0.15, 'coin': 0.20}
 SHIELD_DURATION = 3
 
 # 可选：道具音效路径（若无对应文件，会被忽略）
-HEALTH_SOUND = 'assets/sound effect/hit.wav'
-SHIELD_SOUND = 'assets/sound effect/Meow.ogg'
+ITEM_PICKUP_SOUND = 'assets/music/jump.mp3'
+HEALTH_SOUND = ITEM_PICKUP_SOUND
+SHIELD_SOUND = ITEM_PICKUP_SOUND
+SUPERJUMP_SOUND = ITEM_PICKUP_SOUND
+COIN_SOUND = ITEM_PICKUP_SOUND
 
 # 音乐路径
 PREGAME_MUSIC = 'assets/music/bgm/begin.mp3'

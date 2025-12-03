@@ -330,34 +330,6 @@ class Background:
                         except Exception:
                             pass
                             
-                    # 3. 加载并合成新装饰 (IMG_5506, 5507, 5508)
-                    # 统一放置在背景上方，并保持相同高度
-                    fixed_y = 50
-                    fixed_h = 500  # 调大高度 (250 -> 500)
-
-                    decos = [
-                        (os.path.join('assets', 'documation', 'IMG_5506.PNG'), int(target_width * 0.15)),
-                        (os.path.join('assets', 'documation', 'IMG_5507.PNG'), int(target_width * 0.45)),
-                        (os.path.join('assets', 'documation', 'IMG_5508.PNG'), int(target_width * 0.75)),
-                        # 新增装饰
-                        (os.path.join('assets', 'documation', 'IMG_5508.PNG'), int(target_width * 0.05)),
-                        (os.path.join('assets', 'documation', 'IMG_5506.PNG'), int(target_width * 0.9))
-                    ]
-                    
-                    for path, x_pos in decos:
-                        try:
-                            dec_img = load_image(path, convert_alpha=True)
-                            # 统一缩放到固定高度
-                            scale = fixed_h / dec_img.get_height()
-                            dec_img = pg.transform.scale(dec_img, (int(dec_img.get_width() * scale), fixed_h))
-                            
-                            rect = dec_img.get_rect()
-                            rect.x = x_pos
-                            rect.y = fixed_y
-                            bg_surf.blit(dec_img, rect)
-                        except Exception:
-                            pass
-                            
                     self.custom_layers = [{'surf': bg_surf, 'x': 0.0, 'speed': 0.2}]
                 except Exception:
                     pass

@@ -40,8 +40,9 @@ class Bullet(pg.sprite.Sprite):
             self.height_range = 'high'
         
         # 创建子弹图像
-        # 使用 barrier.png 替换原有的色块
-        self.image = load_image('assets/barrier/barrier.png', size=(bullet_size, bullet_size))
+        # 根据子弹类型加载对应的图片
+        img_path = getattr(settings, 'BULLET_IMAGES', {}).get(bullet_type, 'assets/barrier/barrier.png')
+        self.image = load_image(img_path, size=(bullet_size, bullet_size))
         
         self.rect = self.image.get_rect(center=(x, y))
         
