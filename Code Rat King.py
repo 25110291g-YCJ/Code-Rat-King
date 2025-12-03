@@ -1,5 +1,11 @@
 from random import choice, randint, random
 from sys import exit
+import sys
+import os
+
+# Handle PyInstaller path
+if getattr(sys, 'frozen', False):
+    os.chdir(sys._MEIPASS)
 
 import pygame as pg
 
@@ -1701,6 +1707,7 @@ class Game:
                         # 复制当前画面并用偏移覆盖
                         tmp = self.screen.copy()
                         # 清空原屏幕（黑色）然后把内容偏移贴回去
+
                         try:
                             self.screen.fill((0, 0, 0))
                             self.screen.blit(tmp, (ox, oy))

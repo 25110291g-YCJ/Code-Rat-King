@@ -58,6 +58,24 @@ Your performance is graded based on your final score:
 *   **E**: 50+ Points
 *   **F**: Below 50 Points
 
+## Building the Executable
+
+To create a standalone `.exe` file that can be played without installing Python:
+
+1.  Install PyInstaller and Pillow:
+    ```bash
+    pip install pyinstaller Pillow
+    ```
+2.  Generate the icon (optional, if `icon.ico` is missing):
+    ```bash
+    python convert_icon.py
+    ```
+3.  Build the game:
+    ```bash
+    pyinstaller --noconsole --onefile --icon=icon.ico --add-data "assets;assets" "Code Rat King.py"
+    ```
+4.  The executable will be located in the `dist/` folder.
+
 ## Project Structure
 
 *   `Code Rat King.py`: The main game script.
@@ -66,6 +84,7 @@ Your performance is graded based on your final score:
 *   `text_target.py`: Typing mechanic implementation.
 *   `background.py`: Parallax background management.
 *   `assets/`: Contains all game assets (images, sounds, fonts).
+*   `convert_icon.py`: Helper script to generate the game icon.
 
 ## Credits
 
