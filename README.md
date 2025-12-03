@@ -5,20 +5,22 @@ Code Rat King is an exciting typing-based endless runner game built with Python 
 ## Features
 
 *   **Typing Gameplay:** Type the displayed words correctly to make your character jump and avoid obstacles.
-*   **Endless Runner Action:** Run through different environments while dodging trees, dogs, and houses.
+*   **Endless Runner Action:** Run through different environments while dodging trees and houses.
 *   **Multiple Levels:** Progress through distinct levels including Sky, Mine, and Volcano.
 *   **Boss Battles:** Face off against challenging bosses like Simon, David, and Gio.
 *   **Power-ups:** Collect items to aid your journey:
     *   **Health:** Restores HP.
     *   **Shield:** Provides temporary immunity.
     *   **Super Jump:** Boosts your next jump height.
+    *   **Coin:** Grants bonus score points.
 *   **Dynamic Difficulty:** The game gets faster and harder as you progress.
 *   **Visual Effects:** Features parallax backgrounds, particle effects, and smooth animations.
+*   **Ranking System:** Get graded based on your performance at the end of the run.
 
 ## Controls
 
 *   **Typing (A-Z):** Type the word shown on screen to **JUMP**.
-*   **Down Arrow** or **Left Ctrl**: **SLIDE** (to dodge high obstacles).
+*   **Left Ctrl**: **SLIDE** (to dodge high obstacles).
 *   **Space Bar**: Start Game / Toggle Tutorial / Pause.
 
 ## Installation
@@ -40,9 +42,21 @@ Code Rat King is an exciting typing-based endless runner game built with Python 
     ```
 
 2.  On the main menu, press **SPACE** to start.
-3.  **Type the words** that appear above your character to jump over ground obstacles (like trees and dogs).
-4.  **Press Down/Ctrl** to slide under high obstacles or dodge attacks.
+3.  **Type the words** that appear above your character to jump over ground obstacles.
+4.  **Press Left Ctrl** to slide under high obstacles or dodge attacks.
 5.  Survive as long as possible and aim for a high score!
+
+## Ranking System
+
+Your performance is graded based on your final score:
+
+*   **S**: 300+ Points
+*   **A**: 250+ Points
+*   **B**: 200+ Points
+*   **C**: 150+ Points
+*   **D**: 100+ Points
+*   **E**: 50+ Points
+*   **F**: Below 50 Points
 
 ## Project Structure
 

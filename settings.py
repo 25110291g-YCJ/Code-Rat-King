@@ -48,7 +48,7 @@ HOUSE_SPAWN_FREQ = 60000
 HOUSE_SPAWN_MIN = 40000
 HOUSE_SPAWN_STEP = 5000
 # 固定一次性房屋生成（毫秒）：用于只在开局后固定时刻生成房屋的模式
-HOUSE_FIXED_SPAWN_MS = 15000
+HOUSE_FIXED_SPAWN_MS = 60000
 # 关卡过渡提示持续时长（毫秒）
 LEVEL_TRANSITION_MS = 2000
 DELAY_TIME = 3000
@@ -117,12 +117,12 @@ BULLET_IMAGES = {
 # 评级系统设置
 # 评级等级和对应的分数阈值（更鲜艳醒目的颜色）
 RANK_THRESHOLDS = [
-    (150, 'S', (255, 223, 0)),    # 金色（更亮）
-    (120, 'A', (255, 50, 50)),    # 鲜红色（更鲜艳）
-    (90, 'B', (50, 150, 255)),    # 亮蓝色（更饱和）
-    (60, 'C', (50, 255, 50)),     # 鲜绿色（更明亮）
-    (40, 'D', (255, 150, 50)),    # 橙色（更醒目）
-    (20, 'E', (180, 180, 180)),   # 浅灰色（更明显）
+    (300, 'S', (255, 223, 0)),    # 金色（更亮）
+    (250, 'A', (255, 50, 50)),    # 鲜红色（更鲜艳）
+    (200, 'B', (50, 150, 255)),    # 亮蓝色（更饱和）
+    (150, 'C', (50, 255, 50)),     # 鲜绿色（更明亮）
+    (100, 'D', (255, 150, 50)),    # 橙色（更醒目）
+    (50, 'E', (180, 180, 180)),   # 浅灰色（更明显）
     (0, 'F', (120, 120, 120))     # 中灰色（提高对比度）
 ]
 
@@ -223,7 +223,7 @@ ITEM_RARITY = {'health': 0.40, 'shield': 0.25, 'superjump': 0.15, 'coin': 0.20}
 SHIELD_DURATION = 3
 
 # 可选：道具音效路径（若无对应文件，会被忽略）
-ITEM_PICKUP_SOUND = 'assets/music/jump.mp3'
+ITEM_PICKUP_SOUND = 'assets/music/item.MP3'
 HEALTH_SOUND = ITEM_PICKUP_SOUND
 SHIELD_SOUND = ITEM_PICKUP_SOUND
 SUPERJUMP_SOUND = ITEM_PICKUP_SOUND
